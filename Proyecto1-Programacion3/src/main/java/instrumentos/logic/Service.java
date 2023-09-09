@@ -62,4 +62,45 @@ public class Service {
                 .collect(Collectors.toList());
     }
 
+    //================= CALIBRACIONES DE INSTRUMENTOS ==================
+
+    public void create(Calibraciones cal) throws Exception {
+        Calibraciones result = data.getCalibraciones().stream()
+                .filter(i->i.getNumero().equals(cal.getNumero()))
+                .findFirst().orElse(null);
+        if(result==null) data.getCalibraciones().add(cal);
+        else throw new Exception("Calibracion ya existe.");
+    }
+    public Calibraciones read(Calibraciones cal) throws Exception {
+        Calibraciones result = data.getCalibraciones().stream()
+                .filter(i->i.getNumero().equals(cal.getNumero()))
+                .findFirst().orElse(null);
+        if(result!=null) return result;
+        else throw new Exception("Calibracion no existe.");
+    }
+    public void update(Calibraciones cal) throws Exception{
+        Calibraciones result;
+        try{
+            result = this.read(cal);
+            data.getCalibraciones().remove(result);
+            data.getCalibraciones().add(cal);
+        } catch (Exception ex) {
+            throw new Exception("Calibracion no existe");
+        }
+    }
+    public List<Calibraciones> delete(Calibraciones cal) throws Exception{
+        List<Calibraciones> nueva = data.getCalibraciones();
+        if(nueva.remove(cal)){
+            return nueva;
+        }else{
+            throw new Exception("Calibracion no existe");
+        }
+    }
+
+    public List<Calibraciones> search(Calibraciones cal){
+        return data.getCalibraciones().stream()
+                .filter(i->i.getNumero().contains(cal.getNumero()))
+                .sorted(Comparator.comparing(Calibraciones::getNumero))
+                .collect(Collectors.toList());
+    }
  }
