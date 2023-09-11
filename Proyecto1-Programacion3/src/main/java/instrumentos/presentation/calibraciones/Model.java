@@ -37,7 +37,7 @@ public class Model extends java.util.Observable {
         this.list = list;
         changedProps +=LIST;
     }
-
+//----------------------------------------------------------------------------------------------------------------------
     public Calibraciones getNext() {
         if (current!=null&&list!=null){
             int currentyIndex = list.indexOf(current);
@@ -47,7 +47,11 @@ public class Model extends java.util.Observable {
         }
         return null;
     }
-    //----------------------------------------------------------------------------------------------------------------------
+    public void init(List<Calibraciones> list){
+        setList(list);
+        setCurrent(new Calibraciones());
+    }
+//----------------------------------------------------------------------------------------------------------------------
     @Override
     public void addObserver(Observer o) {
         super.addObserver(o);
@@ -57,9 +61,5 @@ public class Model extends java.util.Observable {
         setChanged();
         notifyObservers(changedProps);
         changedProps = NONE;
-    }
-    public void init(List<Calibraciones> list){
-        setList(list);
-        setCurrent(new Calibraciones());
     }
 }

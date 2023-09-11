@@ -31,9 +31,15 @@ public class Application {
         instrumentos.presentation.instrumentos.View InstrumentosView = new instrumentos.presentation.instrumentos.View();
         instrumentos.presentation.instrumentos.Model InstrumentosModel = new instrumentos.presentation.instrumentos.Model();
         InstrumentosController = new instrumentos.presentation.instrumentos.Controller(InstrumentosView, InstrumentosModel);
+//Calibraciones
+        instrumentos.presentation.calibraciones.View calibracionesView = new instrumentos.presentation.calibraciones.View();
+        instrumentos.presentation.calibraciones.Model calibracionesModel = new instrumentos.presentation.calibraciones.Model();
+        calibracionesController = new instrumentos.presentation.calibraciones.Controller(calibracionesModel, calibracionesView);
+
 
         window.getContentPane().add("Tipos de Instrumento",tiposView.getPanel());
         window.getContentPane().add("Instrumentos", InstrumentosView.getPanel());
+        window.getContentPane().add("Calibraciones", calibracionesView.getPanel());
 
         window.setSize(900,450);
         window.setResizable(true);
@@ -45,6 +51,7 @@ public class Application {
 
     public static instrumentos.presentation.tipos.Controller tiposController;
     public static instrumentos.presentation.instrumentos.Controller InstrumentosController;
+    public static instrumentos.presentation.calibraciones.Controller calibracionesController;
     public static int MODE_EDIT = 2;
     public static JFrame window;
 }

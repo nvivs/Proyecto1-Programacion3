@@ -25,7 +25,7 @@ public class Data {
         tipos.add(new TipoInstrumento("TER","Termómetro","Grados Celcius") );
         tipos.add(new TipoInstrumento("BAR","Barómetro","PSI") );
         calibracionIns = new ArrayList<>();
-        calibracionIns.add(new Calibraciones("001", "21/08/2023", 3));
+        calibracionIns.add(new Calibraciones("001", "21/08/2023", "3"));
     }
 
     public void add(Instrumento i){

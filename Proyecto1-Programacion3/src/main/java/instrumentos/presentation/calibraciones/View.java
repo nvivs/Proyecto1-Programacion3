@@ -51,8 +51,56 @@ public class View implements Observer{
     Model model;
 //----------------------------------------------------------------------------------------------------------------------
     public View(){
-
+        guardarBotonCal.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Calibraciones filter = new Calibraciones();
+                filter.setNumero(numeroTextFieldBus.getText());
+                try{
+                    if(isValid()){
+                        controller.save(filter);
+                    }
+                } catch(Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+        tabla.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = tabla.getSelectedRow();
+                controller.edit(row);
+            }
+        });
+        borrarBotonCal.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Calibraciones filter = new Calibraciones();
+                try{
+                    controller.delete(filter);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+        limpiarBotonCal.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) { controller.clear(); }
+        });
+        buscarButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Calibraciones filter = new Calibraciones();
+                    filter.setNumero(numeroTextFieldBus.getText());
+                    controller.search(filter);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
     }
+//----------------------------------------------------------------------------------------------------------------------
     private boolean isValid(){
         boolean valid = true;
         if(numeroTextField.getText().isEmpty()){
@@ -63,14 +111,6 @@ public class View implements Observer{
             labelNumero.setBackground(panel.getBackground());
             numeroTextField.setToolTipText(null);
         }
-        if(fechaTextField.getText().isEmpty()){
-            labelFecha.setBackground(Color.red);
-            fechaTextField.setToolTipText("Fecha requerido");
-            valid = false;
-        } else {
-            labelFecha.setBackground(panel.getBackground());
-            fechaTextField.setToolTipText(null);
-        }
         if(medicionesTextField.getText().isEmpty()){
             labelMediciones.setBackground(Color.red);
             medicionesTextField.setToolTipText("Medicion requerida");
@@ -79,12 +119,19 @@ public class View implements Observer{
             labelMediciones.setBackground(panel.getBackground());
             medicionesTextField.setToolTipText(null);
         }
+        if(fechaTextField.getText().isEmpty()){
+            labelFecha.setBackground(Color.red);
+            fechaTextField.setToolTipText("Fecha requerido");
+            valid = false;
+        } else {
+            labelFecha.setBackground(panel.getBackground());
+            fechaTextField.setToolTipText(null);
+        }
         return valid;
     }
     @Override
     public void update(Observable updatedModel, Object properties){
         int changedProps = (int) properties;
-
         if((changedProps & Model.LIST) == Model.LIST){
             int[] cols = {TableModel.NUMERO, TableModel.FECHA, TableModel.MEDICIONES};
             tabla.setModel(new TableModel(cols, model.getList()));
@@ -94,8 +141,8 @@ public class View implements Observer{
         }
         if ((changedProps & Model.CURRENT) == Model.CURRENT) {
             numeroTextField.setText(model.getCurrent().getNumero());
+            medicionesTextField.setText(model.getCurrent().getMediciones());
             fechaTextField.setText(model.getCurrent().getFecha());
-            medicionesTextField.setText(String.valueOf(model.getCurrent().getMediciones()));
         }
         if(model.getMode() == Application.MODE_EDIT){
             numeroTextField.setEnabled(false);

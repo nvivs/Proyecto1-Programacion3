@@ -56,8 +56,8 @@ public class Controller {
     public void save(Calibraciones filter) throws Exception{
         Calibraciones e = new Calibraciones();
         e.setNumero(view.getNumero().getText());
+        e.setMediciones(view.getMediciones().getText());
         e.setFecha(view.getFecha().getText());
-        e.setMediciones(Integer.parseInt(view.getMediciones().getText()));
 
         try {
             if(model.getMode() == 2) {

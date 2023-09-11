@@ -154,7 +154,6 @@ public class Service {
             throw new Exception("Calibracion no existe");
         }
     }
-
     public List<Calibraciones> search(Calibraciones cal){
         return data.getCalibraciones().stream()
                 .filter(i->i.getNumero().contains(cal.getNumero()))

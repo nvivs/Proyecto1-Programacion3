@@ -9,8 +9,8 @@ public class TableModel extends AbstractTableModel implements javax.swing.table.
     int[] colsCalibraciones;
     //----------------------------------------------------------------------------------------------------------------------
     public static final int NUMERO=0;
-    public static final int FECHA=1;
-    public static final int MEDICIONES=2;
+    public static final int MEDICIONES=1;
+    public static final int FECHA=2;
     String[] colNamesCalibraciones = new String[6];
     //----------------------------------------------------------------------------------------------------------------------
     public int getColumnCount() {
@@ -31,15 +31,15 @@ public class TableModel extends AbstractTableModel implements javax.swing.table.
         Calibraciones sucursal = rowsCalibraciones.get(row);
         switch (colsCalibraciones[col]){
             case NUMERO: return sucursal.getNumero();
-            case FECHA: return sucursal.getFecha();
             case MEDICIONES: return sucursal.getMediciones();
+            case FECHA: return sucursal.getFecha();
             default: return "";
         }
     }
     private void initColNames(){
         colNamesCalibraciones[NUMERO]= "Numero";
-        colNamesCalibraciones[FECHA]= "Fecha";
         colNamesCalibraciones[MEDICIONES]= "Mediciones";
+        colNamesCalibraciones[FECHA]= "Fecha";
     }
     //----------------------------------------------------------------------------------------------------------------------
     public TableModel(int[] cols, List<Calibraciones> rows){
