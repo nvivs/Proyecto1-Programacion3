@@ -11,7 +11,7 @@ public class XmlPersister {
     private String path;
     private static XmlPersister theInstance;
     public static XmlPersister instance(){
-        if (theInstance==null) theInstance=new XmlPersister("instrumentos.xml");
+        if (theInstance==null) theInstance=new XmlPersister("Instrumentos.xml");
         return theInstance;
     }
     public XmlPersister(String p) {

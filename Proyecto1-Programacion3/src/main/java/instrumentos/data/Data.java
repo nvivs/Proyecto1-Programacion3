@@ -3,12 +3,19 @@ package instrumentos.data;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.TipoInstrumento;
 import instrumentos.logic.Calibraciones;
+import jakarta.xml.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Data {
+    @XmlElementWrapper(name = "tipos")
+    @XmlElement(name = "tipo")
     private List<TipoInstrumento> tipos;
+    @XmlElementWrapper(name = "instrumentos")
+    @XmlElement(name = "instrumento")
     private List <Instrumento> instrumentos;
     private List<Calibraciones> calibracionIns;
 

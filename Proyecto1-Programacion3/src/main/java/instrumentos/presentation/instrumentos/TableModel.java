@@ -62,7 +62,7 @@ public class TableModel extends AbstractTableModel implements javax.swing.table.
     String[] colNames = new String[7];
     private void initColNames(){
         colNames[SERIE]= "No. Serie";
-        colNames[DESCRIPCION]= "Descripcion";
+        colNames[DESCRIPCION]= "Descripción";
         colNames[MAXIMO]= "Máximo";
         colNames[MINIMO]= "Mínimo";
         colNames[TOLERANCIA]= "Tolerancia";

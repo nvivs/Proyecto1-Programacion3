@@ -1,8 +1,12 @@
 package instrumentos;
 
+import instrumentos.logic.Service;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class Application {
     public static void main(String[] args) {
@@ -12,6 +16,13 @@ public class Application {
 
         window = new JFrame();
         window.setContentPane(new JTabbedPane());
+        window.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                Service.instance().stop();
+            }
+        });
 //Tipos
         instrumentos.presentation.tipos.Model tiposModel= new instrumentos.presentation.tipos.Model();
         instrumentos.presentation.tipos.View tiposView = new instrumentos.presentation.tipos.View();

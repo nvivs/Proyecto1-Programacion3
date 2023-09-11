@@ -1,10 +1,11 @@
 package instrumentos.logic;
-import jakarta.xml.bind.annotation.XmlIDREF;
+import jakarta.xml.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
-
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Instrumento {
+    @XmlID
     String serie;
     @XmlIDREF
     TipoInstrumento tipo;
@@ -12,8 +13,12 @@ public class Instrumento {
     int minimo;
     int maximo;
     int tolerancia;
-
+    /*@XmlIDREF
+    @XmlElementWrapper(name = "calibraciones")
+    @XmlElement(name = "calibracion")
     List<Calibraciones> listCalibracion;
+
+     */
 
     public Instrumento(){
         this("", "", 0 , 0 , 0, null);

@@ -3,7 +3,6 @@ package instrumentos.presentation.instrumentos;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
 import instrumentos.logic.TipoInstrumento;
-import instrumentos.presentation.instrumentos.View;
 
 import java.util.List;
 
