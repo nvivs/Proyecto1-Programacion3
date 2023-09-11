@@ -2,6 +2,8 @@ package instrumentos.presentation.calibraciones;
 
 import instrumentos.logic.Calibraciones;
 import instrumentos.Application;
+import instrumentos.logic.Service;
+
 import javax.swing.*;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
@@ -15,7 +17,6 @@ import java.util.Observer;
 public class View implements Observer{
     private JPanel panel;
     private JPanel panelInstrumento;
-    private JFormattedTextField formattedTextField1;
     private JPanel panelCalibracion;
     private JLabel labelNumero;
     private JTextField numeroTextField;
@@ -33,7 +34,9 @@ public class View implements Observer{
     private JButton buscarButton;
     private JPanel listadoPanel;
     private JTable tabla;
-//----------------------------------------------------------------------------------------------------------------------
+    private JLabel textoRojo;
+
+    //----------------------------------------------------------------------------------------------------------------------
     public JPanel getPanel(){return panel;}
     public JTextField getNumero(){ return numeroTextField; }
     public JTextField getFecha(){ return fechaTextField; }
@@ -147,9 +150,12 @@ public class View implements Observer{
         if(model.getMode() == Application.MODE_EDIT){
             numeroTextField.setEnabled(false);
             borrarBotonCal.setEnabled(true);
+            textoRojo.setText("154285");
+            textoRojo.setForeground(Color.red);
         } else {
             numeroTextField.setEnabled(true);
             borrarBotonCal.setEnabled(false);
+            textoRojo.setText(null);
         }
         this.panel.revalidate();
     }

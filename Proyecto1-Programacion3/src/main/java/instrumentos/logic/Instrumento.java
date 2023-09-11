@@ -49,7 +49,15 @@ public class Instrumento {
     public int getTolerancia() {return tolerancia;}
     public void setTolerancia(int tolerancia) {this.tolerancia = tolerancia;}
 
+    /*@Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
 
+        sb.append(serie).append(" - ").append(descripcion).append(" (").append(minimo)
+                .append(" - ").append(maximo);
+
+        return sb.toString();
+    }*/
     @Override
     public int hashCode() {
         int hash = 7;

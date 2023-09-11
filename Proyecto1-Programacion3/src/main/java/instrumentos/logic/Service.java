@@ -66,7 +66,7 @@ public class Service {
             throw new Exception("Instrumento no existe");
         }
      }
-     public List<TipoInstrumento> getTipos(){
+    public List<TipoInstrumento> getTipos(){
         return data.getTipos();
      }
 
@@ -120,6 +120,7 @@ public class Service {
                 .sorted(Comparator.comparing(Instrumento::getDescripcion))
                 .collect(Collectors.toList());
     }
+    public List<Instrumento> getInstrumentos(){ return data.getInstrumentos(); }
     //================= CALIBRACIONES DE INSTRUMENTOS ==================
 
     public void create(Calibraciones cal) throws Exception {
@@ -160,4 +161,5 @@ public class Service {
                 .sorted(Comparator.comparing(Calibraciones::getNumero))
                 .collect(Collectors.toList());
     }
+    public List<Calibraciones> getCalibraciones(){ return data.getCalibraciones(); }
  }
