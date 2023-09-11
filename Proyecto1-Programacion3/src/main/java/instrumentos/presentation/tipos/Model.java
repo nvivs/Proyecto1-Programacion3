@@ -11,7 +11,6 @@ public class Model extends java.util.Observable{
     List<TipoInstrumento> list;
     TipoInstrumento current;
     int mode = 1; // 1 = No editado.
-
     int changedProps = NONE;
 
     @Override

@@ -1,7 +1,6 @@
 package instrumentos.logic;
 
 import instrumentos.data.Data;
-
 import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.List;
@@ -54,6 +53,9 @@ public class Service {
             throw new Exception("Instrumento no existe");
         }
      }
+     public List<TipoInstrumento> getTipos(){
+        return data.getTipos();
+     }
 
     public List<TipoInstrumento> search(TipoInstrumento e){
         return data.getTipos().stream()
@@ -62,6 +64,49 @@ public class Service {
                 .collect(Collectors.toList());
     }
 
+
+    //================= INSTRUMENTOS =================
+
+    public void create(Instrumento e) throws Exception{
+        Instrumento result = data.getInstrumentos().stream()
+                .filter(i->i.getSerie().equals(e.getSerie())).findFirst().orElse(null);
+        if (result==null) data.getInstrumentos().add(e);
+        else throw new Exception("Instrumento ya existe");
+    }
+
+    public Instrumento read(Instrumento e) throws Exception{
+        Instrumento result = data.getInstrumentos().stream()
+                .filter(i->i.getSerie().equals(e.getSerie())).findFirst().orElse(null);
+        if (result!=null) return result;
+        else throw new Exception("Instrumento no existe");
+    }
+
+    public void update(Instrumento e) throws Exception{
+        Instrumento result;
+        try{
+            result = this.read(e);
+            data.getInstrumentos().remove(result);
+            data.getInstrumentos().add(e);
+        }catch (Exception ex) {
+            throw new Exception("Instrumento no existe");
+        }
+    }
+
+    public List<Instrumento> delete(Instrumento e) throws Exception{
+        List<Instrumento> nueva = data.getInstrumentos();
+        if(nueva.remove(e)){
+            return nueva;
+        }else{
+            throw new Exception("Instrumento no existe");
+        }
+    }
+
+    public List<Instrumento> search(Instrumento e){
+        return data.getInstrumentos().stream()
+                .filter(i->i.getDescripcion().contains(e.getDescripcion()))
+                .sorted(Comparator.comparing(Instrumento::getDescripcion))
+                .collect(Collectors.toList());
+    }
     //================= CALIBRACIONES DE INSTRUMENTOS ==================
 
     public void create(Calibraciones cal) throws Exception {

@@ -8,6 +8,7 @@ import java.util.List;
 
 public class Controller{
     View view;
+
     Model model;
 
     public Controller(View view, Model model) {
@@ -81,4 +82,8 @@ public class Controller{
             throw new Exception("DATOS INCOMPLETOS");
         }
     }
+    public List<TipoInstrumento> getTipos(){
+        return Service.instance().getTipos();
+    }
+
 }

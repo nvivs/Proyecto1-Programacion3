@@ -1,27 +1,49 @@
 package instrumentos.logic;
+import jakarta.xml.bind.annotation.XmlIDREF;
+
+import java.util.List;
 import java.util.Objects;
 
 public class Instrumento {
     String serie;
+    @XmlIDREF
+    TipoInstrumento tipo;
     String descripcion;
     int minimo;
     int maximo;
     int tolerancia;
 
+    List<Calibraciones> listCalibracion;
+
     public Instrumento(){
-        this(" ", " ", 0 , 0 , 0);
+        this("", "", 0 , 0 , 0, null);
 
 
     }
 
-    public Instrumento(String serie, String descripcion, int minimo, int maximo, int tolerancia) {
+    public Instrumento(String serie, String descripcion, int minimo, int maximo, int tolerancia, TipoInstrumento tipo) {
         this.serie = serie;
         this.descripcion = descripcion;
         this.minimo = minimo;
         this.maximo = maximo;
         this.tolerancia = tolerancia;
+        this.tipo = tipo;
+
 
     }
+    public String getSerie() {return serie;}
+    public void setSerie(String serie) {this.serie = serie;}
+    public TipoInstrumento getTipo() {return tipo;}
+    public void setTipo(TipoInstrumento tipo) {this.tipo = tipo;}
+    public String getDescripcion() {return descripcion;}
+    public void setDescripcion(String descripcion) {this.descripcion = descripcion;}
+    public int getMinimo() {return minimo;}
+    public void setMinimo(int minimo) {this.minimo = minimo;}
+    public int getMaximo() {return maximo;}
+    public void setMaximo(int maximo) {this.maximo = maximo;}
+    public int getTolerancia() {return tolerancia;}
+    public void setTolerancia(int tolerancia) {this.tolerancia = tolerancia;}
+
 
     @Override
     public int hashCode() {
