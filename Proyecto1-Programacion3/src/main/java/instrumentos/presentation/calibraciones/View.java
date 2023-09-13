@@ -148,9 +148,15 @@ public class View implements Observer{
             fechaTextField.setText(model.getCurrent().getFecha());
         }
         if(model.getMode() == Application.MODE_EDIT){
+            //String var = model.getCurrent().getNumero();
+            //char car = var.charAt(2);
+
             numeroTextField.setEnabled(false);
             borrarBotonCal.setEnabled(true);
-            textoRojo.setText("154285");
+            textoRojo.setText("155668");
+            //textoRojo.setText(Service.instance().getTipos().get(Character.getNumericValue(car) - 1).getUnidad());
+            //textoRojo.setText(Service.instance().getInstrumentos().get(Character.getNumericValue(car) - 1).getSerie());
+            // La linea de arriba solo funciona si la calibracion ya esta guardada y los imprime en orden contrario.
             textoRojo.setForeground(Color.red);
         } else {
             numeroTextField.setEnabled(true);

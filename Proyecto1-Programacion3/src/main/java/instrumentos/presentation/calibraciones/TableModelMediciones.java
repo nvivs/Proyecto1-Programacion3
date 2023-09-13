@@ -50,7 +50,7 @@ public class TableModelMediciones extends AbstractTableModel implements javax.sw
         switch (cols[col]){
             case MEDIDA: return sucursalCal.getNumero();
             case REFERENCIA: return sucursalIns.getMaximo();
-            case LECTURA: //return sucursal.getFecha();
+            //case LECTURA: return sucursal.getFecha();
             default: return "";
         }
     }

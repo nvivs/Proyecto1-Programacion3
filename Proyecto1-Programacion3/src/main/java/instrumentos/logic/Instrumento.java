@@ -51,13 +51,9 @@ public class Instrumento {
 
     /*@Override
     public String toString(){
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(serie).append(" - ").append(descripcion).append(" (").append(minimo)
-                .append(" - ").append(maximo);
-
-        return sb.toString();
+        return this.serie;
     }*/
+
     @Override
     public int hashCode() {
         int hash = 7;

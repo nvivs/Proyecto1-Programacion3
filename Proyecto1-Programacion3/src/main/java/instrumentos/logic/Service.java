@@ -77,7 +77,6 @@ public class Service {
                 .collect(Collectors.toList());
     }
 
-
     //================= INSTRUMENTOS =================
 
     public void create(Instrumento e) throws Exception{
@@ -121,6 +120,7 @@ public class Service {
                 .collect(Collectors.toList());
     }
     public List<Instrumento> getInstrumentos(){ return data.getInstrumentos(); }
+
     //================= CALIBRACIONES DE INSTRUMENTOS ==================
 
     public void create(Calibraciones cal) throws Exception {
