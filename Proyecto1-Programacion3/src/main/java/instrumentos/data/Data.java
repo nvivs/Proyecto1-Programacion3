@@ -17,15 +17,13 @@ public class Data {
     @XmlElementWrapper(name = "instrumentos")
     @XmlElement(name = "instrumento")
     private List <Instrumento> instrumentos;
-    private List<Calibraciones> calibracionIns;
+    //private List<Calibraciones> calibracionIns;
 
     public Data() {
         tipos = new ArrayList<>();
         instrumentos = new ArrayList<>();
         tipos.add(new TipoInstrumento("TER","Termómetro","Grados Celcius") );
         tipos.add(new TipoInstrumento("BAR","Barómetro","PSI") );
-        calibracionIns = new ArrayList<>();
-        calibracionIns.add(new Calibraciones("001", "21/08/2023", "3"));
     }
 
     public void add(Instrumento i){
@@ -37,6 +35,5 @@ public class Data {
     public List<Instrumento> getInstrumentos() {
         return instrumentos;
     }
-    public List<Calibraciones> getCalibraciones(){return calibracionIns;}
 
 }

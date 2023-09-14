@@ -1,9 +1,11 @@
 package instrumentos.presentation.instrumentos;
 
+import instrumentos.logic.Calibraciones;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
 import instrumentos.logic.TipoInstrumento;
 
+import java.util.Collections;
 import java.util.List;
 
 public class Controller{
@@ -12,7 +14,7 @@ public class Controller{
 
 
     public Controller(View view, Model model) {
-        model.init(Service.instance().search(new Instrumento()));
+        model.init(Service.instance().search(new Instrumento()), Service.instance().search(new Calibraciones()));
         this.view = view;
         this.model = model;
         view.setController(this);
@@ -25,6 +27,7 @@ public class Controller{
     public void setSelected(TipoInstrumento selected) {
         model.setSelected(selected);
     }
+    public Instrumento getCurrent(){return model.getCurrent();}
 
     public void search(Instrumento filter) throws  Exception{
         List<Instrumento> rows = Service.instance().search(filter);
@@ -95,6 +98,19 @@ public class Controller{
         } catch (Exception ex) {
             throw new Exception("DATOS INCOMPLETOS");
         }
+    }
+    public void addCalibracion(Calibraciones c) throws Exception {
+        if(Service.instance().read(c)==null) {
+            model.getCurrent().addCalibraciones(c);
+            model.commit();
+        }
+    }
+    public List<Calibraciones> obtenerCalibraciones(){
+           return model.getList2();
+    }
+    public void setListaC(List<Calibraciones> c){
+        model.setList2(c);
+        model.commit();
     }
     public List<TipoInstrumento> getTiposInstrumentos(){
         return Service.instance().getTipos();

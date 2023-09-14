@@ -1,6 +1,7 @@
 package instrumentos.logic;
 import jakarta.xml.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -13,16 +14,23 @@ public class Instrumento {
     int minimo;
     int maximo;
     int tolerancia;
-    /*@XmlIDREF
-    @XmlElementWrapper(name = "calibraciones")
-    @XmlElement(name = "calibracion")
+
+
+    @XmlIDREF
+            @XmlElementWrapper(name = "calibraciones")
+            @XmlElement(name = "calibracion")
     List<Calibraciones> listCalibracion;
 
-     */
+    public List<Calibraciones> getListCalibracion() {
+        return listCalibracion;
+    }
 
+    public void setListCalibracion(List<Calibraciones> listCalibracion) {
+        this.listCalibracion = listCalibracion;
+    }
     public Instrumento(){
         this("", "", 0 , 0 , 0, null);
-
+        listCalibracion = new ArrayList<>();
 
     }
 
@@ -33,6 +41,7 @@ public class Instrumento {
         this.maximo = maximo;
         this.tolerancia = tolerancia;
         this.tipo = tipo;
+        listCalibracion = new ArrayList<>();
 
 
     }
@@ -48,16 +57,13 @@ public class Instrumento {
     public void setMaximo(int maximo) {this.maximo = maximo;}
     public int getTolerancia() {return tolerancia;}
     public void setTolerancia(int tolerancia) {this.tolerancia = tolerancia;}
-
-    /*@Override
-    public String toString(){
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(serie).append(" - ").append(descripcion).append(" (").append(minimo)
-                .append(" - ").append(maximo);
-
-        return sb.toString();
-    }*/
+    public void addCalibraciones(Calibraciones c){
+        listCalibracion.add(c);
+    }
+    @Override
+    public String toString() {
+    return serie + " - " + descripcion + " (" + minimo + " - " + maximo + tipo.getUnidad() + ')';
+    }
     @Override
     public int hashCode() {
         int hash = 7;

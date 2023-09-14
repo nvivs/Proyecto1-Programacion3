@@ -2,15 +2,11 @@ package instrumentos.presentation.calibraciones;
 
 import instrumentos.logic.Calibraciones;
 import instrumentos.Application;
-import instrumentos.logic.Service;
 
 import javax.swing.*;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -28,8 +24,8 @@ public class View implements Observer{
     private JButton limpiarBotonCal;
     private JButton borrarBotonCal;
     private JPanel busquedaPanel;
-    private JLabel labelNumeroBus;
-    private JTextField numeroTextFieldBus;
+    private JLabel labelFechaBus;
+    private JTextField FechaTextFieldBus;
     private JButton reporteBoton;
     private JButton buscarButton;
     private JPanel listadoPanel;
@@ -58,7 +54,7 @@ public class View implements Observer{
             @Override
             public void actionPerformed(ActionEvent e) {
                 Calibraciones filter = new Calibraciones();
-                filter.setNumero(numeroTextFieldBus.getText());
+                filter.setNumero(FechaTextFieldBus.getText());
                 try{
                     if(isValid()){
                         controller.save(filter);
@@ -81,6 +77,7 @@ public class View implements Observer{
                 Calibraciones filter = new Calibraciones();
                 try{
                     controller.delete(filter);
+                    textoRojo.setText(controller.getSelectedInstrumento().getDescripcion());
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
@@ -88,16 +85,31 @@ public class View implements Observer{
         });
         limpiarBotonCal.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) { controller.clear(); }
+            public void actionPerformed(ActionEvent e) { controller.clear();
+                textoRojo.setText(controller.getSelectedInstrumento().getDescripcion());
+            }
         });
         buscarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
                     Calibraciones filter = new Calibraciones();
-                    filter.setNumero(numeroTextFieldBus.getText());
+                    filter.setFecha(FechaTextFieldBus.getText());
                     controller.search(filter);
                 } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
+        panel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                try {
+                    controller.setSelectedInstrumento();
+                    controller.shown();
+                    textoRojo.setText(controller.getSelectedInstrumento().toString());
+                    textoRojo.setForeground(Color.red);
+                }catch (Exception ex){
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
@@ -134,29 +146,29 @@ public class View implements Observer{
     }
     @Override
     public void update(Observable updatedModel, Object properties){
-        int changedProps = (int) properties;
-        if((changedProps & Model.LIST) == Model.LIST){
-            int[] cols = {TableModel.NUMERO, TableModel.FECHA, TableModel.MEDICIONES};
-            tabla.setModel(new TableModel(cols, model.getList()));
-            tabla.setRowHeight(30);
-            TableColumnModel columnModel = tabla.getColumnModel();
-            columnModel.getColumn(2).setPreferredWidth(200);
+        if(controller != null) {
+            int changedProps = (int) properties;
+            if ((changedProps & Model.LIST) == Model.LIST) {
+                int[] cols = {TableModel.NUMERO, TableModel.FECHA, TableModel.MEDICIONES};
+                tabla.setModel(new TableModel(cols, controller.obtenerListaInstrumentos()));
+                tabla.setRowHeight(30);
+                TableColumnModel columnModel = tabla.getColumnModel();
+                columnModel.getColumn(2).setPreferredWidth(200);
+            }
+            if ((changedProps & Model.CURRENT) == Model.CURRENT) {
+                numeroTextField.setText(model.getCurrent().getNumero());
+                medicionesTextField.setText(model.getCurrent().getMediciones());
+                fechaTextField.setText(model.getCurrent().getFecha());
+            }
+            if (model.getMode() == Application.MODE_EDIT) {
+                numeroTextField.setEnabled(false);
+                borrarBotonCal.setEnabled(true);
+            } else {
+                numeroTextField.setEnabled(true);
+                borrarBotonCal.setEnabled(false);
+                textoRojo.setText(null);
+            }
+            this.panel.revalidate();
         }
-        if ((changedProps & Model.CURRENT) == Model.CURRENT) {
-            numeroTextField.setText(model.getCurrent().getNumero());
-            medicionesTextField.setText(model.getCurrent().getMediciones());
-            fechaTextField.setText(model.getCurrent().getFecha());
-        }
-        if(model.getMode() == Application.MODE_EDIT){
-            numeroTextField.setEnabled(false);
-            borrarBotonCal.setEnabled(true);
-            textoRojo.setText("154285");
-            textoRojo.setForeground(Color.red);
-        } else {
-            numeroTextField.setEnabled(true);
-            borrarBotonCal.setEnabled(false);
-            textoRojo.setText(null);
-        }
-        this.panel.revalidate();
     }
 }

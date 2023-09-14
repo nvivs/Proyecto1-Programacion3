@@ -1,18 +1,33 @@
 package instrumentos.logic;
 
-import java.util.Objects;
+import jakarta.xml.bind.annotation.*;
 
+import java.util.Objects;
+//@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Calibraciones {
+    @XmlID
     String _numero;
     String _mediciones;
     String _fecha;
+    @XmlIDREF
+    Instrumento instrumento;
+    public Instrumento getInstrumento() {
+        return instrumento;
+    }
+
+    public void setInstrumento(Instrumento instrumento) {
+        this.instrumento = instrumento;
+    }
+
     //--------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------
-    public Calibraciones(){this("", "", "");}
-    public Calibraciones(String numero, String mediciones, String fecha){
+    public Calibraciones(){this("", "", "",null);}
+    public Calibraciones(String numero, String mediciones, String fecha, Instrumento instrumento){
         this._numero = numero;
         this._mediciones = mediciones;
         this._fecha = fecha;
+        this.instrumento = instrumento;
     }
     public void setNumero(String numero){ this._numero = numero; }
     public String getNumero(){ return this._numero; }

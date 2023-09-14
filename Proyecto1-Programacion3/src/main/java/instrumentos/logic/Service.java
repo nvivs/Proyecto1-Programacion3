@@ -4,6 +4,8 @@ import instrumentos.data.Data;
 import instrumentos.data.XmlPersister;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -124,42 +126,89 @@ public class Service {
     //================= CALIBRACIONES DE INSTRUMENTOS ==================
 
     public void create(Calibraciones cal) throws Exception {
-        Calibraciones result = data.getCalibraciones().stream()
+        Instrumento instru = read(cal.getInstrumento());
+        List<Calibraciones> nueva = instru.getListCalibracion();
+        Calibraciones result = nueva.stream()
                 .filter(i->i.getNumero().equals(cal.getNumero()))
                 .findFirst().orElse(null);
-        if(result==null) data.getCalibraciones().add(cal);
+        if(result==null) nueva.add(cal);
         else throw new Exception("Calibracion ya existe.");
     }
     public Calibraciones read(Calibraciones cal) throws Exception {
-        Calibraciones result = data.getCalibraciones().stream()
+        Instrumento instru = read(cal.getInstrumento());
+        List<Calibraciones> nueva = instru.getListCalibracion();
+        Calibraciones result = nueva.stream()
                 .filter(i->i.getNumero().equals(cal.getNumero()))
                 .findFirst().orElse(null);
-        if(result!=null) return result;
-        else throw new Exception("Calibracion no existe.");
+         return result;
+        //else throw new Exception("Calibracion no existe.");
     }
     public void update(Calibraciones cal) throws Exception{
         Calibraciones result;
+        Instrumento instru = read(cal.getInstrumento());
+        List<Calibraciones> nueva = instru.getListCalibracion();
         try{
             result = this.read(cal);
-            data.getCalibraciones().remove(result);
-            data.getCalibraciones().add(cal);
+            nueva.remove(result);
+            nueva.add(cal);
         } catch (Exception ex) {
             throw new Exception("Calibracion no existe");
         }
     }
     public List<Calibraciones> delete(Calibraciones cal) throws Exception{
-        List<Calibraciones> nueva = data.getCalibraciones();
+        Instrumento instru = read(cal.getInstrumento());
+        List<Calibraciones> nueva = instru.getListCalibracion();
         if(nueva.remove(cal)){
             return nueva;
         }else{
             throw new Exception("Calibracion no existe");
         }
     }
-    public List<Calibraciones> search(Calibraciones cal){
-        return data.getCalibraciones().stream()
-                .filter(i->i.getNumero().contains(cal.getNumero()))
-                .sorted(Comparator.comparing(Calibraciones::getNumero))
-                .collect(Collectors.toList());
+    public List<Calibraciones> search(Calibraciones cal) {
+        try {
+            Instrumento instru = read(cal.getInstrumento());
+            List<Calibraciones> Nueva = instru.getListCalibracion();
+            List<Calibraciones> resultado = new ArrayList<>();
+            for (Calibraciones calibracion : Nueva) {
+                if (calibracion.getFecha().contains(cal.getFecha())) {
+                    resultado.add(calibracion);
+                }
+            }
+            return resultado;
+        } catch (Exception ex) {
+            return Collections.emptyList();
+        }
     }
-    public List<Calibraciones> getCalibraciones(){ return data.getCalibraciones(); }
+    public List<Calibraciones> adding (Calibraciones cal) throws Exception {
+        try {
+            Instrumento instru = cal.getInstrumento();
+            List<Calibraciones> Nueva = instru.getListCalibracion();
+            List<Calibraciones> resultado = new ArrayList<>();
+            for (Calibraciones calibracion : Nueva) {
+                if(Nueva.isEmpty()){
+                    resultado.add(calibracion);
+                }
+                if (calibracion.getNumero().contains(cal.getNumero())) {
+                    resultado.add(calibracion);
+                }
+            }
+            return resultado;
+        } catch (Exception ex) {
+            throw new Exception("Calibracion ya existe");
+        }
+    }
+    public List<Calibraciones> getCalibracionesDelInstrumento(Instrumento selected) {
+        List<Calibraciones> calibracionesDelInstrumento = new ArrayList<>();
+        List<Calibraciones> Nueva = selected.getListCalibracion();
+        for (Calibraciones calibracion : Nueva) {
+            if(Nueva.isEmpty()){
+                return Collections.emptyList();
+            }
+            if (calibracion.getInstrumento().equals(selected)) {
+                calibracionesDelInstrumento.add(calibracion);
+            }
+        }
+        return calibracionesDelInstrumento;
+    }
+   // public List<Calibraciones> getCalibraciones(){ return data.getCalibraciones(); }
  }

@@ -1,5 +1,6 @@
 package instrumentos.presentation.instrumentos;
 
+import instrumentos.logic.Calibraciones;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.TipoInstrumento;
 
@@ -8,9 +9,13 @@ import java.util.Observer;
 
 public class Model extends java.util.Observable{
     List <Instrumento> listInstrumento;
+    List<Calibraciones> list;
+
     List<TipoInstrumento> listTypes;
     Instrumento current;
     TipoInstrumento selected;
+    List<Calibraciones> calibraciones;
+
     int mode = 1;
     int changedProps = NONE;
     @Override
@@ -25,7 +30,19 @@ public class Model extends java.util.Observable{
     }
     public Model() {
     }
-    public void init(List<Instrumento> list){
+
+    public void init2(List<Calibraciones> list){}
+
+    public List<Calibraciones> getList2() {
+        return list;
+    }
+    public void setList2(List<Calibraciones> list){
+        this.list = list;
+        changedProps +=LIST2;
+    }
+
+    public void init(List<Instrumento> list, List<Calibraciones> list2){
+        setList2(list2);
         setList(list);
         setCurrent(new Instrumento());
     }
@@ -66,5 +83,6 @@ public class Model extends java.util.Observable{
  public static int LIST=1;
  public static int LIST_TYPE = 3;
  public static int CURRENT=2;
+ public static int LIST2 = 4;
 
 }
