@@ -3,7 +3,6 @@ package instrumentos.logic;
 import jakarta.xml.bind.annotation.*;
 
 import java.util.Objects;
-//@XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Calibraciones {
     @XmlID

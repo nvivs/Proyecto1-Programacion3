@@ -1,4 +1,19 @@
 package instrumentos.presentation.calibraciones;
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.Border;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.HorizontalAlignment;
+import com.itextpdf.layout.properties.TextAlignment;
 import instrumentos.Application;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
@@ -23,7 +38,7 @@ public class Controller {
 
     //----------------------------------------------------------------------------------------------------------------------
     public Controller(Model model, View view) {
-        model.init(Service.instance().search(new Calibraciones()));
+        //model.init(Service.instance().search(new Calibraciones()));
         this.view = view;
         this.model = model;
         view.setController(this);
@@ -38,7 +53,7 @@ public class Controller {
             throw new Exception("NINGUN REGISTRO COINCIDE");
         }
         controller.setListaC(rows);
-        model.setList();
+        model.setProps();
         model.setCurrent(new Calibraciones());
         model.setMode(1);
         model.commit();
@@ -48,7 +63,7 @@ public class Controller {
             filter = model.getCurrent();
             List<Calibraciones> nuevaL = Service.instance().delete(filter);
             controller.setListaC(nuevaL);
-            model.setList();
+            model.setProps();
             model.setCurrent(new Calibraciones()); //Para que al borrar quede el tipo de instrumento sin datos hasta que se seleccione otro
             model.setMode(1);
             model.commit();
@@ -78,22 +93,25 @@ public class Controller {
         e.setMediciones(view.getMediciones().getText());
         e.setFecha(view.getFecha().getText());
         e.setInstrumento(model.getSelected());
+        if(e.getInstrumento()==null){
+            throw new Exception("No tiene un instrumento seleccionado");
+        }
         try {
             if(model.getMode() == 2) {
                 Service.instance().update(e);
              List<Calibraciones> rows = Service.instance().adding(filter);
                 calibracionesInstrumento.put(controller.getCurrent(), rows);
-                model.setList();
-                controller.setListaC(rows);
                 model.setCurrent(e);
+                controller.setListaC(rows);
+                model.setProps();
                 model.commit();
             } else if (model.getMode() == 1){
                 Service.instance().create(e);
                List<Calibraciones> rows = Service.instance().adding(filter);
                 calibracionesInstrumento.put(controller.getCurrent(), rows);
-                model.setList();
-                controller.setListaC(rows);
                 model.setCurrent(e);
+                controller.setListaC(rows);
+                model.setProps();
                 model.setMode(2);
                 model.commit();
             }
@@ -103,12 +121,16 @@ public class Controller {
         }
     }
     public void setSelectedInstrumento() throws Exception {
+        if(controller.getCurrent().getTipo()==null){
+            throw new Exception("No seleccionó ningún instrumento. No podrá agregar calibraciones");
+        }
         try {
             Instrumento selected = controller.getCurrent();
             model.setSelected(selected);
             calibracionesInstrumento.putIfAbsent(selected, new ArrayList<>());
             model.commit();
         }catch (Exception e){
+
         }
     }
     public List<Calibraciones> obtenerListaInstrumentos(){
@@ -125,7 +147,59 @@ public class Controller {
         Instrumento selectedInstrumento = getSelectedInstrumento();
         List<Calibraciones> calibraciones = calibracionesInstrumento.computeIfAbsent(selectedInstrumento, k -> new ArrayList<>());
         controller.setListaC(calibraciones);
-        model.setList();
+        model.setProps();
         model.commit();
+    }
+    private Cell getCeldaI(Image image, HorizontalAlignment horizontalAlignment, boolean border){
+        image.setMargins(0,0,0,0);
+        Cell cellI = new Cell().add(image);
+        image.setHorizontalAlignment(horizontalAlignment);
+        if(!border) cellI.setBorder(Border.NO_BORDER);
+        return cellI;
+    }
+    private Cell getCeldaP(Paragraph paragraph, TextAlignment textAlignment, boolean border){
+        paragraph.setMargin(0);
+        Cell cellP = new Cell().add(paragraph);
+        cellP.setTextAlignment(textAlignment);
+        if(!border) cellP.setBorder(Border.NO_BORDER) ;
+        return cellP;
+    }
+    public void createDocument() throws Exception{
+        try {
+            String archivo = "Calibraciones.pdf";
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.TIMES_ROMAN);
+            PdfWriter writer = new PdfWriter(archivo);
+            PdfDocument pdfDocument = new PdfDocument(writer);
+            Document document = new Document(pdfDocument);
+            document.setMargins(20, 40, 20, 40);
+            Table header = new Table(1);
+            header.setWidth(400);
+            header.setHorizontalAlignment(HorizontalAlignment.CENTER);
+            header.addCell(getCeldaP(new Paragraph("Sistema De Instrumentos").setFont(font).setBold().setUnderline().setFontSize(25), TextAlignment.CENTER, false));
+            header.addCell(getCeldaI(new Image(ImageDataFactory.create("Proyecto1-Programacion3\\src\\main\\resources\\instrumentos\\presentation\\icons\\Laboratorio.png")).setWidth(450).setHeight(280), HorizontalAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph(" "),TextAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph(" "),TextAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph("Calibraciones").setFont(font).setBold().setFontSize(20), TextAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph(" "),TextAlignment.LEFT, false));
+            document.add(header);
+            Table titulos = new Table(4);
+            titulos.setWidth(530);
+            titulos.setHorizontalAlignment(HorizontalAlignment.CENTER);
+            titulos.addCell(getCeldaP(new Paragraph("Número").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("Fecha").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("Mediciones").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("№ Serie Instrumento").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+
+            for (Calibraciones c : controller.getCurrent().getListCalibracion()) {
+                titulos.addCell(getCeldaP(new Paragraph(c.getNumero()).setBackgroundColor(ColorConstants.LIGHT_GRAY), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(c.getFecha()), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(c.getMediciones()), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(c.getInstrumento().getSerie()), TextAlignment.CENTER, true));
+            }
+            document.add(titulos);
+            document.close();
+        }catch (Exception e){
+            throw new Exception("No se pudo crear el PDF");
+        }
     }
 }

@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -45,6 +46,8 @@ public class View implements Observer {
             public void mouseClicked(MouseEvent e) {
                 int row = list.getSelectedRow();
                 controller.edit(row);
+                isValid();
+
             }
         });
         delete.addActionListener(new ActionListener() {
@@ -55,7 +58,7 @@ public class View implements Observer {
                     controller.delete(filter);
 
                 } catch (Exception ex) {
-                    throw new RuntimeException(ex);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
@@ -75,7 +78,21 @@ public class View implements Observer {
                         controller.save(filter);
                     }
                 } catch (Exception ex) {
-                    throw new RuntimeException(ex);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
+        report.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try{
+                    controller.createDocument();
+                    if(Desktop.isDesktopSupported()){
+                        File archivo = new File("Tipos.pdf");
+                        Desktop.getDesktop().open(archivo);
+                    }
+                }catch (Exception ex){
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });

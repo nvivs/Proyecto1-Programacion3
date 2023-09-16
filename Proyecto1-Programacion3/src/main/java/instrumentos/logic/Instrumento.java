@@ -1,6 +1,8 @@
 package instrumentos.logic;
+import instrumentos.data.XmlPersister;
 import jakarta.xml.bind.annotation.*;
 
+import javax.sql.rowset.spi.XmlReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -16,9 +18,9 @@ public class Instrumento {
     int tolerancia;
 
 
-    @XmlIDREF
-            @XmlElementWrapper(name = "calibraciones")
-            @XmlElement(name = "calibracion")
+
+    @XmlElementWrapper(name = "calibraciones")
+    @XmlElement(name = "calibracion")
     List<Calibraciones> listCalibracion;
 
     public List<Calibraciones> getListCalibracion() {
@@ -62,7 +64,7 @@ public class Instrumento {
     }
     @Override
     public String toString() {
-    return serie + " - " + descripcion + " (" + minimo + " - " + maximo + tipo.getUnidad() + ')';
+    return serie + " - " + descripcion + " (" + minimo + " - " + maximo + " " + tipo.getUnidad() + ')';
     }
     @Override
     public int hashCode() {

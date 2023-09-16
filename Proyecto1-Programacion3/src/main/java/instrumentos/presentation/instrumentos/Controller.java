@@ -1,5 +1,20 @@
 package instrumentos.presentation.instrumentos;
 
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.Border;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.HorizontalAlignment;
+import com.itextpdf.layout.properties.TextAlignment;
 import instrumentos.logic.Calibraciones;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
@@ -41,24 +56,23 @@ public class Controller{
     }
 
     public void delete (Instrumento filter) throws Exception {
-        try {
+            if(!filter.getListCalibracion().isEmpty()){
             filter = model.getCurrent();
             List<Instrumento> nuevaL = Service.instance().delete(filter);
             model.setList(nuevaL);
             model.setCurrent(new Instrumento());
             model.setMode(1);
             model.commit();
-
-        }catch (Exception e){
-            throw new Exception("NINGUN REGISTRO COINCIDE");
-        }
+            }else{
+                throw new Exception("NO SE PUEDE ELIMINAR EL INSTRUMENTO PORQUE EXISTEN CALIBRACIONES ASOCIADAS");
+            }
     }
     public void edit(int row){
         Instrumento e = model.getList().get(row);
         try {
-            setSelected(model.getCurrent().getTipo());
             model.setCurrent(Service.instance().read(e));
             model.setMode(2);
+            setSelected(model.getCurrent().getTipo());
             model.commit();
         } catch (Exception ex) {}
     }
@@ -80,6 +94,9 @@ public class Controller{
         }
         e.setTolerancia(Integer.parseInt(view.getTolerancia().getText()));
         e.setTipo(view.getTipo());
+        if(e.getTipo() == null){
+            throw new Exception("TIPO DE INSTRUMENTO REQUERIDO");
+        }
         try {
             if(model.getMode() == 2) {
                 Service.instance().update(e);
@@ -99,12 +116,6 @@ public class Controller{
             throw new Exception("DATOS INCOMPLETOS");
         }
     }
-    public void addCalibracion(Calibraciones c) throws Exception {
-        if(Service.instance().read(c)==null) {
-            model.getCurrent().addCalibraciones(c);
-            model.commit();
-        }
-    }
     public List<Calibraciones> obtenerCalibraciones(){
            return model.getList2();
     }
@@ -118,5 +129,61 @@ public class Controller{
     public void shown(){
         model.setListType(Service.instance().search(new TipoInstrumento()));
         model.commit();
+    }
+    private Cell getCeldaI(Image image, HorizontalAlignment horizontalAlignment, boolean border){
+        image.setMargins(0,0,0,0);
+        Cell cellI = new Cell().add(image);
+        image.setHorizontalAlignment(horizontalAlignment);
+        if(!border) cellI.setBorder(Border.NO_BORDER);
+        return cellI;
+    }
+    private Cell getCeldaP(Paragraph paragraph, TextAlignment textAlignment, boolean border){
+        paragraph.setMargin(0);
+        Cell cellP = new Cell().add(paragraph);
+        cellP.setTextAlignment(textAlignment);
+        if(!border) cellP.setBorder(Border.NO_BORDER) ;
+        return cellP;
+    }
+    public void createDocument() throws Exception{
+        try {
+            String archivo = "Instrumentos.pdf";
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.TIMES_ROMAN);
+            PdfWriter writer = new PdfWriter(archivo);
+            PdfDocument pdfDocument = new PdfDocument(writer);
+            Document document = new Document(pdfDocument);
+            document.setMargins(20, 40, 20, 40);
+            Table header = new Table(1);
+            header.setWidth(400);
+            header.setHorizontalAlignment(HorizontalAlignment.CENTER);
+            header.addCell(getCeldaP(new Paragraph("Sistema De Instrumentos").setFont(font).setBold().setUnderline().setFontSize(25), TextAlignment.CENTER, false));
+            header.addCell(getCeldaI(new Image(ImageDataFactory.create("Proyecto1-Programacion3\\src\\main\\resources\\instrumentos\\presentation\\icons\\Laboratorio.png")).setWidth(450).setHeight(280), HorizontalAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph(" "),TextAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph(" "),TextAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph("Instrumentos").setFont(font).setBold().setFontSize(20), TextAlignment.CENTER, false));
+            header.addCell(getCeldaP(new Paragraph(" "),TextAlignment.LEFT, false));
+            document.add(header);
+            Table titulos = new Table(6);
+            titulos.setWidth(530);
+            titulos.setHorizontalAlignment(HorizontalAlignment.CENTER);
+            titulos.addCell(getCeldaP(new Paragraph("Serie").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("Tipo").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("Descripción").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("Mínimo").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("Máximo").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+            titulos.addCell(getCeldaP(new Paragraph("Tolerancia").setBackgroundColor(ColorConstants.CYAN).setFontColor(ColorConstants.BLACK), TextAlignment.CENTER, true));
+
+            for (Instrumento i : model.getList()) {
+                titulos.addCell(getCeldaP(new Paragraph(i.getSerie()).setBackgroundColor(ColorConstants.LIGHT_GRAY), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(i.getTipo().getNombre()), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(i.getDescripcion()), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(String.valueOf(i.getMinimo())), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(String.valueOf(i.getMaximo())), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(String.valueOf(i.getTolerancia())), TextAlignment.CENTER, true));
+            }
+            document.add(titulos);
+            document.close();
+        }catch (Exception e){
+            throw new Exception("No se pudo crear el PDF");
+        }
     }
 }

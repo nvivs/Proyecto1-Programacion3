@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -60,7 +61,7 @@ public class View implements Observer{
                         controller.save(filter);
                     }
                 } catch(Exception ex) {
-                    throw new RuntimeException(ex);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
@@ -77,16 +78,16 @@ public class View implements Observer{
                 Calibraciones filter = new Calibraciones();
                 try{
                     controller.delete(filter);
-                    textoRojo.setText(controller.getSelectedInstrumento().getDescripcion());
+                    textoRojo.setText(controller.getSelectedInstrumento().toString());
                 } catch (Exception ex) {
-                    throw new RuntimeException(ex);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
         limpiarBotonCal.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) { controller.clear();
-                textoRojo.setText(controller.getSelectedInstrumento().getDescripcion());
+                textoRojo.setText(controller.getSelectedInstrumento().toString());
             }
         });
         buscarButton.addActionListener(new ActionListener() {
@@ -101,16 +102,32 @@ public class View implements Observer{
                 }
             }
         });
+        reporteBoton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try{
+                    if(Desktop.isDesktopSupported()){
+                        controller.createDocument();
+                        File archivo = new File("Calibraciones.pdf");
+                        Desktop.getDesktop().open(archivo);
+                    }
+                }catch(Exception ex){
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
         panel.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
                 try {
                     controller.setSelectedInstrumento();
+                    textoRojo.setForeground(Color.red);
                     controller.shown();
                     textoRojo.setText(controller.getSelectedInstrumento().toString());
-                    textoRojo.setForeground(Color.red);
-                }catch (Exception ex){
-                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    textoRojo.setText("");
+                    tabla.setVisible(false);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });

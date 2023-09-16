@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.List;
@@ -55,7 +56,7 @@ public class View implements Observer {
                 int row = list.getSelectedRow();
                 controller.edit(row);
                 tipo.setSelectedItem(controller.getSelected());
-
+                isValid();
             }
         });
         delete.addActionListener(new ActionListener() {
@@ -66,7 +67,7 @@ public class View implements Observer {
                     controller.delete(filter);
 
                 } catch (Exception ex) {
-                    throw new RuntimeException(ex);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
@@ -87,7 +88,20 @@ public class View implements Observer {
                     }
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
-                    //throw new RuntimeException(ex);
+                }
+            }
+        });
+        report.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if(Desktop.isDesktopSupported()){
+                        controller.createDocument();
+                        File archivo = new File("Instrumentos.pdf");
+                        Desktop.getDesktop().open(archivo);
+                    }
+                }catch(Exception ex){
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
@@ -169,7 +183,7 @@ public class View implements Observer {
     public void update(Observable updatedModel, Object properties) {
         int changedProps = (int) properties;
         if ((changedProps & instrumentos.presentation.instrumentos.Model.LIST) == instrumentos.presentation.instrumentos.Model.LIST) {
-            int[] cols = {TableModel.SERIE, TableModel.DESCRIPCION, TableModel.MAXIMO, TableModel.MINIMO, TableModel.TOLERANCIA};
+            int[] cols = {TableModel.SERIE, TableModel.DESCRIPCION, TableModel.MINIMO, TableModel.MAXIMO, TableModel.TOLERANCIA};
             list.setModel(new TableModel(cols, model.getList()));
             list.setRowHeight(30);
             TableColumnModel columnModel = list.getColumnModel();
@@ -178,8 +192,8 @@ public class View implements Observer {
         if ((changedProps & instrumentos.presentation.instrumentos.Model.CURRENT) == Model.CURRENT) {
             serie.setText(model.getCurrent().getSerie());
             descripcion.setText(model.getCurrent().getDescripcion());
-            maximo.setText(String.valueOf(model.getCurrent().getMaximo()));
             minimo.setText(String.valueOf(model.getCurrent().getMinimo()));
+            maximo.setText(String.valueOf(model.getCurrent().getMaximo()));
             tolerancia.setText(String.valueOf(model.getCurrent().getTolerancia()));
             TipoInstrumento currentTipo = model.getCurrent().getTipo();
             if (currentTipo != null) {

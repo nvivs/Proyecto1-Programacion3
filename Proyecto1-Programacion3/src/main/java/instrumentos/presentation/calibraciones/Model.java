@@ -52,9 +52,12 @@ public class Model extends java.util.Observable {
     public List<Calibraciones> getList() {
         return list;
     }
-    public void setList(){
+    //public void setList(List<Calibraciones> list){
       //  this.list = list;
-        changedProps +=LIST;
+        //changedProps +=LIST;
+    //}
+    public void setProps(){
+        changedProps += LIST;
     }
 //----------------------------------------------------------------------------------------------------------------------
     public Calibraciones getNext() {
@@ -67,7 +70,8 @@ public class Model extends java.util.Observable {
         return null;
     }
     public void init(List<Calibraciones> list){
-        setList();
+        //setList(list);
+        setProps();
         setCurrent(new Calibraciones());
     }
 //----------------------------------------------------------------------------------------------------------------------

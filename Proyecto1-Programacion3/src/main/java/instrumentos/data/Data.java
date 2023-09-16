@@ -17,7 +17,9 @@ public class Data {
     @XmlElementWrapper(name = "instrumentos")
     @XmlElement(name = "instrumento")
     private List <Instrumento> instrumentos;
-    //private List<Calibraciones> calibracionIns;
+
+   // private List<Calibraciones> calibracionIns;
+
 
     public Data() {
         tipos = new ArrayList<>();
