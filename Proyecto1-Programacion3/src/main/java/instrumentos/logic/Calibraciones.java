@@ -2,27 +2,28 @@ package instrumentos.logic;
 
 import jakarta.xml.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Calibraciones {
     @XmlID
     String _numero;
-    String _mediciones;
+    int _mediciones;
     String _fecha;
     @XmlIDREF
     Instrumento instrumento;
     public Instrumento getInstrumento() {
         return instrumento;
     }
-
     public void setInstrumento(Instrumento instrumento) {
         this.instrumento = instrumento;
     }
 
     //--------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------
-    public Calibraciones(){this("", "", "",null);}
-    public Calibraciones(String numero, String mediciones, String fecha, Instrumento instrumento){
+    public Calibraciones(){ this("", 0, "",null); }
+    public Calibraciones(String numero, int mediciones, String fecha, Instrumento instrumento){
         this._numero = numero;
         this._mediciones = mediciones;
         this._fecha = fecha;
@@ -32,8 +33,8 @@ public class Calibraciones {
     public String getNumero(){ return this._numero; }
     public void setFecha(String fecha){ this._fecha = fecha; }
     public String getFecha(){ return _fecha; }
-    public void setMediciones(String mediciones){ this._mediciones = mediciones; }
-    public String getMediciones(){ return _mediciones; }
+    public void setMediciones(int mediciones){ this._mediciones = mediciones; }
+    public int getMediciones(){ return _mediciones; }
 //----------------------------------------------------------------------------------------------------------------------
     public String toString(){ return this._numero; }
     @Override

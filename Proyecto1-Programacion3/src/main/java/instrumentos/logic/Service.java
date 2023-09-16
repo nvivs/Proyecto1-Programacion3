@@ -2,7 +2,6 @@ package instrumentos.logic;
 
 import instrumentos.data.Data;
 import instrumentos.data.XmlPersister;
-
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -210,5 +209,24 @@ public class Service {
         }
         return calibracionesDelInstrumento;
     }
-   // public List<Calibraciones> getCalibraciones(){ return data.getCalibraciones(); }
- }
+//----------------------------------------------------------------------------------------------------------------------
+    public List<Medida> crearListaMedidas(){
+        int i = 0, minimo = 0, maximo = 0, referencia = 0, operacion = 0;
+        List<Medida> newMed = data.getMedidas();
+
+        for(Medida med : newMed) {
+            minimo = data.getInstrumentos().get(i).getMinimo();
+            maximo = data.getInstrumentos().get(i).getMaximo();
+            operacion = (maximo - minimo) / data.getInstrumentos().get(i).getListCalibracion().size();
+
+            for(int j=0;j<data.getInstrumentos().get(i).getListCalibracion().size();j++){
+                referencia = minimo + j * operacion;
+                med.setMedida(Integer.valueOf(data.getInstrumentos().get(i).getListCalibracion().get(j).getNumero()));
+                med.setReferencia(referencia);
+                med.setLectura(0);
+            }
+        }
+
+        return newMed;
+    }
+}

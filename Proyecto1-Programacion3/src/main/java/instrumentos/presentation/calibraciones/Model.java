@@ -2,6 +2,7 @@ package instrumentos.presentation.calibraciones;
 
 import instrumentos.logic.Calibraciones;
 import instrumentos.logic.Instrumento;
+import instrumentos.logic.Medida;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,10 +12,8 @@ public class Model extends java.util.Observable {
     List<Calibraciones> list;
     Calibraciones current;
     Instrumento selected;
+    List<Medida> listMed;
     int mode = 1; // 1 = No editado.
-
-
-
     int changedProps = NONE;
     //----------------------------------------------------------------------------------------------------------------------
     public static int NONE=0;
@@ -45,7 +44,6 @@ public class Model extends java.util.Observable {
     public int getChangedProps() {
         return changedProps;
     }
-
     public void setChangedProps(int changedProps) {
         this.changedProps = changedProps;
     }
@@ -59,6 +57,8 @@ public class Model extends java.util.Observable {
     public void setProps(){
         changedProps += LIST;
     }
+    public void setListMed(List<Medida> med) { this.listMed = med; }
+    public List<Medida> getListMed() { return listMed; }
 //----------------------------------------------------------------------------------------------------------------------
     public Calibraciones getNext() {
         if (current!=null&&list!=null){

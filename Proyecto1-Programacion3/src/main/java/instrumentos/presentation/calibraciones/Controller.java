@@ -16,6 +16,7 @@ import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import instrumentos.Application;
 import instrumentos.logic.Instrumento;
+import instrumentos.logic.Medida;
 import instrumentos.logic.Service;
 import instrumentos.logic.Calibraciones;
 import java.util.ArrayList;
@@ -33,7 +34,6 @@ public class Controller {
     public void setController(instrumentos.presentation.instrumentos.Controller controller) {
         this.controller = controller;
     }
-
     instrumentos.presentation.instrumentos.Controller controller;
 
     //----------------------------------------------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ public class Controller {
     public void edit(int row){
         Calibraciones e = controller.getCurrent().getListCalibracion().get(row);
         try {
-            model.setCurrent(Service.instance().read(e));
+            //model.setCurrent(Service.instance().read(e));
             model.setMode(2);
             model.commit();
         } catch (Exception ex) {}
@@ -90,7 +90,7 @@ public class Controller {
         Calibraciones e = new Calibraciones();
         filter.setInstrumento(controller.getCurrent());
         e.setNumero(view.getNumero().getText());
-        e.setMediciones(view.getMediciones().getText());
+        e.setMediciones(Integer.parseInt(view.getMediciones().getText()));
         e.setFecha(view.getFecha().getText());
         e.setInstrumento(model.getSelected());
         if(e.getInstrumento()==null){
@@ -99,7 +99,7 @@ public class Controller {
         try {
             if(model.getMode() == 2) {
                 Service.instance().update(e);
-             List<Calibraciones> rows = Service.instance().adding(filter);
+                List<Calibraciones> rows = Service.instance().adding(filter);
                 calibracionesInstrumento.put(controller.getCurrent(), rows);
                 model.setCurrent(e);
                 controller.setListaC(rows);
@@ -107,7 +107,7 @@ public class Controller {
                 model.commit();
             } else if (model.getMode() == 1){
                 Service.instance().create(e);
-               List<Calibraciones> rows = Service.instance().adding(filter);
+                List<Calibraciones> rows = Service.instance().adding(filter);
                 calibracionesInstrumento.put(controller.getCurrent(), rows);
                 model.setCurrent(e);
                 controller.setListaC(rows);
@@ -120,6 +120,7 @@ public class Controller {
             throw new Exception("DATOS INCOMPLETOS");
         }
     }
+//----------------------------------------------------------------------------------------------------------------------
     public void setSelectedInstrumento() throws Exception {
         if(controller.getCurrent().getTipo()==null){
             throw new Exception("No seleccionó ningún instrumento. No podrá agregar calibraciones");
@@ -139,6 +140,21 @@ public class Controller {
         }else{
             return Collections.emptyList();
         }
+    }
+    public void editarMedidas(int row){
+        Calibraciones e = model.getList().get(row);
+        try {
+            model.setCurrent(Service.instance().read(e));
+            model.setMode(2);
+            model.commit();
+        } catch (Exception ex) {}
+    }
+    public List<Medida> obtenerListaMedidas(){
+        List<Medida> med = Service.instance().crearListaMedidas();
+        model.setListMed(med);
+        model.setProps();
+        model.commit();
+        return med;
     }
     public Instrumento getSelectedInstrumento(){
         return controller.getCurrent();
@@ -193,7 +209,7 @@ public class Controller {
             for (Calibraciones c : controller.getCurrent().getListCalibracion()) {
                 titulos.addCell(getCeldaP(new Paragraph(c.getNumero()).setBackgroundColor(ColorConstants.LIGHT_GRAY), TextAlignment.CENTER, true));
                 titulos.addCell(getCeldaP(new Paragraph(c.getFecha()), TextAlignment.CENTER, true));
-                titulos.addCell(getCeldaP(new Paragraph(c.getMediciones()), TextAlignment.CENTER, true));
+                titulos.addCell(getCeldaP(new Paragraph(String.valueOf(c.getMediciones())), TextAlignment.CENTER, true));
                 titulos.addCell(getCeldaP(new Paragraph(c.getInstrumento().getSerie()), TextAlignment.CENTER, true));
             }
             document.add(titulos);
