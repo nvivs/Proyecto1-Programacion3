@@ -37,9 +37,12 @@ public class Application {
         calibracionesController = new instrumentos.presentation.calibraciones.Controller(calibracionesModel, calibracionesView);
         calibracionesController.setController(InstrumentosController);
 
+        instrumentos.presentation.acerca.View acercaView = new instrumentos.presentation.acerca.View();
+
         window.getContentPane().add("Tipos de Instrumento",tiposView.getPanel());
         window.getContentPane().add("Instrumentos", InstrumentosView.getPanel());
         window.getContentPane().add("Calibraciones", calibracionesView.getPanel());
+        window.getContentPane().add("Acerca de", acercaView.getPanel());
 
         window.setSize(900,450);
         window.setResizable(true);
