@@ -16,26 +16,18 @@ public class Instrumento {
     int minimo;
     int maximo;
     int tolerancia;
-
-
-
+    
     @XmlElementWrapper(name = "calibraciones")
     @XmlElement(name = "calibracion")
     List<Calibraciones> listCalibracion;
-
     public List<Calibraciones> getListCalibracion() {
         return listCalibracion;
     }
-
-    public void setListCalibracion(List<Calibraciones> listCalibracion) {
-        this.listCalibracion = listCalibracion;
-    }
+    public void setListCalibracion(List<Calibraciones> listCalibracion) { this.listCalibracion = listCalibracion; }
     public Instrumento(){
         this("", "", 0 , 0 , 0, null);
         listCalibracion = new ArrayList<>();
-
     }
-
     public Instrumento(String serie, String descripcion, int minimo, int maximo, int tolerancia, TipoInstrumento tipo) {
         this.serie = serie;
         this.descripcion = descripcion;
@@ -44,8 +36,6 @@ public class Instrumento {
         this.tolerancia = tolerancia;
         this.tipo = tipo;
         listCalibracion = new ArrayList<>();
-
-
     }
     public String getSerie() {return serie;}
     public void setSerie(String serie) {this.serie = serie;}

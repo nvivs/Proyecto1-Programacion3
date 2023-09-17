@@ -147,6 +147,7 @@ public class Controller {
             model.setCurrent(Service.instance().read(e));
             model.setMode(2);
             model.commit();
+            model.setListMed(Service.instance().crearListaMedidas());
         } catch (Exception ex) {}
     }
     public List<Medida> obtenerListaMedidas(){
