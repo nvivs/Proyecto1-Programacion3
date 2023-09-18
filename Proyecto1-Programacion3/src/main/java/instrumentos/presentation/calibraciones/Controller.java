@@ -38,12 +38,14 @@ public class Controller {
 
     //----------------------------------------------------------------------------------------------------------------------
     public Controller(Model model, View view) {
-        //model.init(Service.instance().search(new Calibraciones()));
         this.view = view;
         this.model = model;
         view.setController(this);
         view.setModel(model);
         this.controller = null;
+    }
+    public Calibraciones getCurrent(){
+        return model.getCurrent();
     }
 
     public void search(Calibraciones filter) throws Exception{
@@ -62,9 +64,9 @@ public class Controller {
         try {
             filter = model.getCurrent();
             List<Calibraciones> nuevaL = Service.instance().delete(filter);
-            controller.setListaC(nuevaL);
             model.setProps();
             model.setCurrent(new Calibraciones()); //Para que al borrar quede el tipo de instrumento sin datos hasta que se seleccione otro
+            controller.setListaC(nuevaL);
             model.setMode(1);
             model.commit();
 
@@ -75,7 +77,7 @@ public class Controller {
     public void edit(int row){
         Calibraciones e = controller.getCurrent().getListCalibracion().get(row);
         try {
-            //model.setCurrent(Service.instance().read(e));
+            model.setCurrent(Service.instance().read(e));
             model.setMode(2);
             model.commit();
         } catch (Exception ex) {}
@@ -142,29 +144,29 @@ public class Controller {
         }
     }
     public void editarMedidas(int row){
-        Calibraciones e = model.getList().get(row);
+        Medida e = model.getCurrent().getMedidas().get(row);
         try {
-            model.setCurrent(Service.instance().read(e));
             model.setMode(2);
             model.commit();
-            model.setListMed(Service.instance().crearListaMedidas());
         } catch (Exception ex) {}
     }
-    public List<Medida> obtenerListaMedidas(){
-        List<Medida> med = Service.instance().crearListaMedidas();
-        model.setListMed(med);
-        model.setProps();
-        model.commit();
-        return med;
+
+    public void CreateMeasure(){
+        model.getCurrent().CreateMedidas();
     }
+    public List<Medida> obtenerListaMedidas(){
+        return model.getCurrent().getMedidas();
+    }
+    public void setCurrent(Calibraciones e){model.setCurrent(e);}
+
     public Instrumento getSelectedInstrumento(){
         return controller.getCurrent();
     }
     public void shown(){
         Instrumento selectedInstrumento = getSelectedInstrumento();
+        model.setProps();
         List<Calibraciones> calibraciones = calibracionesInstrumento.computeIfAbsent(selectedInstrumento, k -> new ArrayList<>());
         controller.setListaC(calibraciones);
-        model.setProps();
         model.commit();
     }
     private Cell getCeldaI(Image image, HorizontalAlignment horizontalAlignment, boolean border){

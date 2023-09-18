@@ -209,24 +209,5 @@ public class Service {
         }
         return calibracionesDelInstrumento;
     }
-//----------------------------------------------------------------------------------------------------------------------
-    public List<Medida> crearListaMedidas(){
-        int j = 0, minimo = 0, maximo = 0, referencia = 0, operacion = 0, cantMedidas = 0;
-        List<Medida> newMed = data.getMedidas();
-
-        for(Medida med: newMed) {
-            minimo = data.getInstrumentos().get(j).getMinimo();
-            maximo = data.getInstrumentos().get(j).getMaximo();
-            operacion = (maximo - minimo) / newMed.size();
-
-            referencia = minimo + j * operacion;
-            med.setMedida(j);
-            med.setReferencia(referencia);
-            med.setLectura(0);
-
-            j++;
-        }
-
-        return newMed;
-    }
 }
+//----------------------------------------------------------------------------------------------------------------------

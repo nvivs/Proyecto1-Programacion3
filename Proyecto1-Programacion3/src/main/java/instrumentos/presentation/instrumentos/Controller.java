@@ -126,7 +126,7 @@ public class Controller{
     public List<TipoInstrumento> getTiposInstrumentos(){
         return Service.instance().getTipos();
     }
-    public void shown(){
+    public void shown() throws Exception {
         model.setListType(Service.instance().search(new TipoInstrumento()));
         model.commit();
     }

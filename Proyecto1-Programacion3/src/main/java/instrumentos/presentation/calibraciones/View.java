@@ -9,6 +9,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -62,6 +63,7 @@ public class View implements Observer{
                 try{
                     if(isValid()){
                         controller.save(filter);
+                        controller.CreateMeasure();
                     }
                 } catch(Exception ex) {
                     throw new RuntimeException(ex);
@@ -81,7 +83,7 @@ public class View implements Observer{
                 Calibraciones filter = new Calibraciones();
                 try{
                     controller.delete(filter);
-                    textoRojo.setText(controller.getSelectedInstrumento().getDescripcion());
+                    textoRojo.setText(controller.getSelectedInstrumento().toString());
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
@@ -89,8 +91,9 @@ public class View implements Observer{
         });
         limpiarBotonCal.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) { controller.clear();
-                textoRojo.setText(controller.getSelectedInstrumento().getDescripcion());
+            public void actionPerformed(ActionEvent e) {
+                controller.clear();
+                textoRojo.setText(controller.getSelectedInstrumento().toString());
             }
         });
         buscarButton.addActionListener(new ActionListener() {
@@ -100,6 +103,7 @@ public class View implements Observer{
                     Calibraciones filter = new Calibraciones();
                     filter.setFecha(FechaTextFieldBus.getText());
                     controller.search(filter);
+                    textoRojo.setText(controller.getSelectedInstrumento().toString());
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
@@ -110,12 +114,26 @@ public class View implements Observer{
             public void componentShown(ComponentEvent e) {
                 try {
                     controller.setSelectedInstrumento();
+                    tablaMedidas.setVisible(false);
                     controller.shown();
+                    Calibraciones filter = new Calibraciones();
+                    if(!controller.getSelectedInstrumento().getListCalibracion().isEmpty()) {
+                        filter.setFecha("");
+                        controller.search(filter);
+                    }
                     textoRojo.setText(controller.getSelectedInstrumento().toString());
                     textoRojo.setForeground(Color.red);
                 }catch (Exception ex){
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
+            }
+        });
+        panel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentHidden(ComponentEvent e) {
+                controller.clear();
+                controller.setCurrent(new Calibraciones());
+                super.componentHidden(e);
             }
         });
         panelMediciones.addComponentListener(new ComponentAdapter() {
@@ -129,6 +147,20 @@ public class View implements Observer{
             public void valueChanged(ListSelectionEvent e) {
                 int row = tablaMedidas.getSelectedRow();
                 controller.editarMedidas(row);
+            }
+        });
+        reporteBoton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try{
+                    controller.createDocument();
+                    if(Desktop.isDesktopSupported()){
+                        File archivo = new File("Calibraciones.pdf");
+                        Desktop.getDesktop().open(archivo);
+                    }
+                }catch (Exception ex){
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
+                }
             }
         });
     }
@@ -153,7 +185,7 @@ public class View implements Observer{
         }
         if(fechaTextField.getText().isEmpty()){
             labelFecha.setBackground(Color.red);
-            fechaTextField.setToolTipText("Fecha requerido");
+            fechaTextField.setToolTipText("Fecha requerida");
             valid = false;
         } else {
             labelFecha.setBackground(panel.getBackground());
@@ -169,14 +201,9 @@ public class View implements Observer{
                 int[] cols = {TableModel.NUMERO, TableModel.FECHA, TableModel.MEDICIONES};
                 tabla.setModel(new TableModel(cols, controller.obtenerListaInstrumentos()));
                 tabla.setRowHeight(30);
+
                 TableColumnModel columnModel = tabla.getColumnModel();
                 columnModel.getColumn(2).setPreferredWidth(200);
-
-                /*int[] colsMed = {TableModelMediciones.MEDIDA, TableModelMediciones.REFERENCIA, TableModelMediciones.LECTURA};
-                tablaMedidas.setModel(new TableModelMediciones(colsMed, controller.obtenerListaMedidas()));
-                tablaMedidas.setRowHeight(10);
-                TableColumnModel columnModelMed = tablaMedidas.getColumnModel();
-                columnModelMed.getColumn(2).setPreferredWidth(100);*/
             }
             if ((changedProps & Model.CURRENT) == Model.CURRENT) {
                 numeroTextField.setText(model.getCurrent().getNumero());

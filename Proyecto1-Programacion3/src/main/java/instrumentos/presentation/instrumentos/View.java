@@ -108,8 +108,13 @@ public class View implements Observer {
         panel.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
-                controller.shown();
+                try {
+                    controller.shown();
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
                 actualizarComboBox();
+
             }
         });
     }

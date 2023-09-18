@@ -50,10 +50,6 @@ public class Model extends java.util.Observable {
     public List<Calibraciones> getList() {
         return list;
     }
-    //public void setList(List<Calibraciones> list){
-      //  this.list = list;
-        //changedProps +=LIST;
-    //}
     public void setProps(){
         changedProps += LIST;
     }
