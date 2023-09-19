@@ -51,7 +51,6 @@ public class TableModelMediciones extends AbstractTableModel implements javax.sw
     public boolean isCellEditable(int rowIndex, int columnIndex){
         if(columnIndex==LECTURA) return true;
         else return false;
-        // return columnIndex==LECTURA;
     }
     private void initColNames(){
         colNames[MEDIDA]= "Medida";

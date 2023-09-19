@@ -2,7 +2,6 @@ package instrumentos.presentation.tipos;
 
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
@@ -14,13 +13,9 @@ import com.itextpdf.layout.element.*;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
-import instrumentos.Application;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
 import instrumentos.logic.TipoInstrumento;
-
-import javax.swing.text.StyleConstants;
-import java.awt.*;
 import java.util.List;
 
 public class Controller{

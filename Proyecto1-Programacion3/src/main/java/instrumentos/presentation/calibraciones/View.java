@@ -61,12 +61,16 @@ public class View implements Observer{
                 Calibraciones filter = new Calibraciones();
                 filter.setNumero(FechaTextFieldBus.getText());
                 try{
+                    if(controller.getSelectedInstrumento().getTipo()==null){
+                        throw new Exception("No se puede guardar");
+                    }
                     if(isValid()){
                         controller.save(filter);
                         controller.CreateMeasure();
                     }
                 } catch(Exception ex) {
-                    throw new RuntimeException(ex);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
+
                 }
             }
         });
@@ -75,6 +79,7 @@ public class View implements Observer{
             public void mouseClicked(MouseEvent e) {
                 int row = tabla.getSelectedRow();
                 controller.edit(row);
+                isValid();
             }
         });
         borrarBotonCal.addActionListener(new ActionListener() {
@@ -113,16 +118,23 @@ public class View implements Observer{
             @Override
             public void componentShown(ComponentEvent e) {
                 try {
-                    controller.setSelectedInstrumento();
-                    tablaMedidas.setVisible(false);
-                    controller.shown();
                     Calibraciones filter = new Calibraciones();
-                    if(!controller.getSelectedInstrumento().getListCalibracion().isEmpty()) {
-                        filter.setFecha("");
-                        controller.search(filter);
-                    }
+                    if (controller.getSelectedInstrumento().getTipo() == null) {
+                        tabla.setVisible(false);
+                        throw new Exception("NO ELIGIO UN INSTRUMENTO");
+                    } else{
+                        controller.setSelectedInstrumento();
+                        tabla.setVisible(true);
+                        tablaMedidas.setVisible(false);
+                        controller.shown();
+                        if (!controller.getSelectedInstrumento().getListCalibracion().isEmpty()) {
+                            filter.setFecha("");
+                            controller.search(filter);
+                        }
+
                     textoRojo.setText(controller.getSelectedInstrumento().toString());
                     textoRojo.setForeground(Color.red);
+                }
                 }catch (Exception ex){
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
@@ -133,6 +145,9 @@ public class View implements Observer{
             public void componentHidden(ComponentEvent e) {
                 controller.clear();
                 controller.setCurrent(new Calibraciones());
+                fechaTextField.setEnabled(true);
+                medicionesTextField.setEnabled(true);
+
                 super.componentHidden(e);
             }
         });
@@ -145,8 +160,8 @@ public class View implements Observer{
         tablaMedidas.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                int row = tablaMedidas.getSelectedRow();
-                controller.editarMedidas(row);
+                //int row = tablaMedidas.getSelectedRow();
+                controller.editarMedidas();
             }
         });
         reporteBoton.addActionListener(new ActionListener() {

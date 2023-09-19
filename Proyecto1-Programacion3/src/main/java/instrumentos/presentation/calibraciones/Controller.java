@@ -14,7 +14,6 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
-import instrumentos.Application;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Medida;
 import instrumentos.logic.Service;
@@ -43,9 +42,6 @@ public class Controller {
         view.setController(this);
         view.setModel(model);
         this.controller = null;
-    }
-    public Calibraciones getCurrent(){
-        return model.getCurrent();
     }
 
     public void search(Calibraciones filter) throws Exception{
@@ -143,8 +139,8 @@ public class Controller {
             return Collections.emptyList();
         }
     }
-    public void editarMedidas(int row){
-        Medida e = model.getCurrent().getMedidas().get(row);
+    public void editarMedidas(){
+        //Medida e = model.getCurrent().getMedidas().get(row);
         try {
             model.setMode(2);
             model.commit();
@@ -164,9 +160,14 @@ public class Controller {
     }
     public void shown(){
         Instrumento selectedInstrumento = getSelectedInstrumento();
-        model.setProps();
-        List<Calibraciones> calibraciones = calibracionesInstrumento.computeIfAbsent(selectedInstrumento, k -> new ArrayList<>());
-        controller.setListaC(calibraciones);
+        if(selectedInstrumento.getTipo()==null){
+            controller.setListaC(Collections.emptyList());
+            model.setProps();
+        }else {
+            model.setProps();
+            List<Calibraciones> calibraciones = calibracionesInstrumento.computeIfAbsent(selectedInstrumento, k -> new ArrayList<>());
+            controller.setListaC(calibraciones);
+        }
         model.commit();
     }
     private Cell getCeldaI(Image image, HorizontalAlignment horizontalAlignment, boolean border){

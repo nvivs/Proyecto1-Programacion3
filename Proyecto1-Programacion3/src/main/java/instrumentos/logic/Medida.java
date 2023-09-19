@@ -1,6 +1,5 @@
 package instrumentos.logic;
 
-import java.util.List;
 import java.util.Objects;
 
 public class Medida {
@@ -41,9 +40,6 @@ public class Medida {
             return false;
         }
         final Medida other = (Medida) obj; //casting
-        if (!Objects.equals(this._medida, other._medida)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this._medida, other._medida);
     }
 }

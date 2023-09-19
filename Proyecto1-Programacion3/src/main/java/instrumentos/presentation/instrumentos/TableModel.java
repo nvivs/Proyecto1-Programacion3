@@ -45,11 +45,6 @@ public class TableModel extends AbstractTableModel implements javax.swing.table.
             default: return "";
         }
     }
-
-    public Instrumento getRowAt(int row) {
-        return rows.get(row);
-    }
-
     public static final int SERIE=0;
     public static final int DESCRIPCION=1;
     public static final int MINIMO=2;

@@ -1,8 +1,5 @@
 package instrumentos.logic;
-import instrumentos.data.XmlPersister;
 import jakarta.xml.bind.annotation.*;
-
-import javax.sql.rowset.spi.XmlReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -23,7 +20,6 @@ public class Instrumento {
     public List<Calibraciones> getListCalibracion() {
         return listCalibracion;
     }
-    public void setListCalibracion(List<Calibraciones> listCalibracion) { this.listCalibracion = listCalibracion; }
     public Instrumento(){
         this("", "", 0 , 0 , 0, null);
         listCalibracion = new ArrayList<>();
@@ -54,7 +50,10 @@ public class Instrumento {
     }
     @Override
     public String toString() {
-    return serie + " - " + descripcion + " (" + minimo + " - " + maximo + " " + tipo.getUnidad() + ')';
+        if(tipo!=null) {
+            return serie + " - " + descripcion + " (" + minimo + " - " + maximo + " " + tipo.getUnidad() + ')';
+        }
+        return " ";
     }
     @Override
     public int hashCode() {

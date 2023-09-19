@@ -75,9 +75,6 @@ public class TipoInstrumento {
             return false;
         }
         final TipoInstrumento other = (TipoInstrumento) obj; //casting
-        if (!Objects.equals(this.codigo, other.codigo)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.codigo, other.codigo);
     }
 }

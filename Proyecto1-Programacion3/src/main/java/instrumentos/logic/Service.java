@@ -2,7 +2,6 @@ package instrumentos.logic;
 
 import instrumentos.data.Data;
 import instrumentos.data.XmlPersister;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -195,19 +194,6 @@ public class Service {
         } catch (Exception ex) {
             throw new Exception("Calibracion ya existe");
         }
-    }
-    public List<Calibraciones> getCalibracionesDelInstrumento(Instrumento selected) {
-        List<Calibraciones> calibracionesDelInstrumento = new ArrayList<>();
-        List<Calibraciones> Nueva = selected.getListCalibracion();
-        for (Calibraciones calibracion : Nueva) {
-            if(Nueva.isEmpty()){
-                return Collections.emptyList();
-            }
-            if (calibracion.getInstrumento().equals(selected)) {
-                calibracionesDelInstrumento.add(calibracion);
-            }
-        }
-        return calibracionesDelInstrumento;
     }
 }
 //----------------------------------------------------------------------------------------------------------------------

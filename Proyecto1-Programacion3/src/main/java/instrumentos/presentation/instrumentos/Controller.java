@@ -19,8 +19,6 @@ import instrumentos.logic.Calibraciones;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
 import instrumentos.logic.TipoInstrumento;
-
-import java.util.Collections;
 import java.util.List;
 
 public class Controller{
@@ -56,14 +54,15 @@ public class Controller{
     }
 
     public void delete (Instrumento filter) throws Exception {
-            if(!filter.getListCalibracion().isEmpty()){
+            if(filter.getListCalibracion().size()== 0){
             filter = model.getCurrent();
             List<Instrumento> nuevaL = Service.instance().delete(filter);
             model.setList(nuevaL);
             model.setCurrent(new Instrumento());
             model.setMode(1);
             model.commit();
-            }else{
+            }
+            else{
                 throw new Exception("NO SE PUEDE ELIMINAR EL INSTRUMENTO PORQUE EXISTEN CALIBRACIONES ASOCIADAS");
             }
     }

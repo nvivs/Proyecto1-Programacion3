@@ -1,9 +1,5 @@
 package instrumentos.presentation.tipos;
-
-import instrumentos.Application;
 import instrumentos.logic.TipoInstrumento;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
@@ -50,16 +46,6 @@ public class Model extends java.util.Observable{
     }
     public int getMode(){
         return mode;
-    }
-
-    public TipoInstrumento getNext() {
-        if (current!=null&&list!=null){
-            int currentyIndex = list.indexOf(current);
-            if(currentyIndex >= 0 && currentyIndex < list.size()-1){
-                return list.get(currentyIndex+1);
-            }
-        }
-        return null;
     }
 
     public void setCurrent(TipoInstrumento current) {
