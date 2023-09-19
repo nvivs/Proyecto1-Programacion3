@@ -55,6 +55,15 @@ public class Model extends java.util.Observable {
     }
     public void setListMed(List<Medida> med) { this.listMed = med; }
     public List<Medida> getListMed() { return listMed; }
+    public void crearNumeros(){
+        if(mode!=1){
+            int i=1;
+            for(Calibraciones cal : selected.getListCalibracion()) {
+                cal.setNumero(String.valueOf(i));
+                i++;
+            }
+        } else { current.setNumero("0"); }
+    }
 //----------------------------------------------------------------------------------------------------------------------
     public Calibraciones getNext() {
         if (current!=null&&list!=null){
