@@ -160,7 +160,6 @@ public class View implements Observer{
         tablaMedidas.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                //int row = tablaMedidas.getSelectedRow();
                 controller.editarMedidas();
             }
         });
