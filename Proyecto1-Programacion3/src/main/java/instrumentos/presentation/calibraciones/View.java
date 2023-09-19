@@ -221,6 +221,7 @@ public class View implements Observer{
                 columnModel.getColumn(2).setPreferredWidth(200);
             }
             if ((changedProps & Model.CURRENT) == Model.CURRENT) {
+                controller.crearNum();
                 numeroTextField.setText(model.getCurrent().getNumero());
                 medicionesTextField.setText(String.valueOf(model.getCurrent().getMediciones()));
                 fechaTextField.setText(model.getCurrent().getFecha());
@@ -237,7 +238,7 @@ public class View implements Observer{
                 panelMediciones.setVisible(true);
                 tablaMedidas.setVisible(true);
             } else {
-                numeroTextField.setEnabled(true);
+                numeroTextField.setEnabled(false);
                 borrarBotonCal.setEnabled(false);
                 panelMediciones.setVisible(false);
                 tablaMedidas.setVisible(false);

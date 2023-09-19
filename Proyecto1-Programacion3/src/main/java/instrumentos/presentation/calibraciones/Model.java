@@ -43,6 +43,25 @@ public class Model extends java.util.Observable {
     public void setProps(){
         changedProps += LIST;
     }
+    public void crearNumeros(){
+        if(mode!=1){
+            int i=1;
+            for(Calibraciones cal : selected.getListCalibracion()) {
+                cal.setNumero(String.valueOf(i));
+                i++;
+            }
+        } else { current.setNumero("0"); }
+    }
+//----------------------------------------------------------------------------------------------------------------------
+    public Calibraciones getNext() {
+        if (current!=null&&list!=null){
+            int currentyIndex = list.indexOf(current);
+            if(currentyIndex >= 0 && currentyIndex < list.size()-1){
+                return list.get(currentyIndex+1);
+            }
+        }
+        return null;
+    }
 //----------------------------------------------------------------------------------------------------------------------
     @Override
     public void addObserver(Observer o) {

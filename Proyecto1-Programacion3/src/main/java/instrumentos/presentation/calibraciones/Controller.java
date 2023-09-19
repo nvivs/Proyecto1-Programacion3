@@ -118,6 +118,9 @@ public class Controller {
             throw new Exception("DATOS INCOMPLETOS");
         }
     }
+    public void crearNum(){
+        if(controller.getCurrent().getTipo()!=null){ model.crearNumeros(); }
+    }
 //----------------------------------------------------------------------------------------------------------------------
     public void setSelectedInstrumento() throws Exception {
         if(controller.getCurrent().getTipo()==null){
