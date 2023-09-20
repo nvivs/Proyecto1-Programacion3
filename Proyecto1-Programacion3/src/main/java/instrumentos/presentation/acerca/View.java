@@ -4,8 +4,7 @@ import javax.swing.*;
 
 public class View {
     private JPanel panel;
-    private JLabel imagen;
-    private JLabel label;
+    private JLabel Titulo;
 
     public JPanel getPanel(){ return panel; }
 }

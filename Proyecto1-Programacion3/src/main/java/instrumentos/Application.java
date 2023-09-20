@@ -21,6 +21,8 @@ public class Application {
                 Service.instance().stop();
             }
         });
+        instrumentos.presentation.acerca.View acercaView = new instrumentos.presentation.acerca.View();
+
 //Tipos
         instrumentos.presentation.tipos.Model tiposModel= new instrumentos.presentation.tipos.Model();
         instrumentos.presentation.tipos.View tiposView = new instrumentos.presentation.tipos.View();
@@ -34,13 +36,10 @@ public class Application {
         instrumentos.presentation.calibraciones.Model calibracionesModel = new instrumentos.presentation.calibraciones.Model();
         calibracionesController = new instrumentos.presentation.calibraciones.Controller(calibracionesModel, calibracionesView);
         calibracionesController.setController(InstrumentosController);
-
-      //  instrumentos.presentation.acerca.View acercaView = new instrumentos.presentation.acerca.View();
-
         window.getContentPane().add("Tipos de Instrumento",tiposView.getPanel());
         window.getContentPane().add("Instrumentos", InstrumentosView.getPanel());
         window.getContentPane().add("Calibraciones", calibracionesView.getPanel());
-       // window.getContentPane().add("Acerca de", acercaView.getPanel());
+        window.getContentPane().add("Acerca de", acercaView.getPanel());
 
         window.setSize(900,450);
         window.setResizable(true);

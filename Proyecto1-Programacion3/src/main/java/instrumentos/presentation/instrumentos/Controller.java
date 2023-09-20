@@ -54,8 +54,8 @@ public class Controller{
     }
 
     public void delete (Instrumento filter) throws Exception {
-            if(filter.getListCalibracion().size()== 0){
-            filter = model.getCurrent();
+        filter = model.getCurrent();
+            if(filter.getListCalibracion().isEmpty()){
             List<Instrumento> nuevaL = Service.instance().delete(filter);
             model.setList(nuevaL);
             model.setCurrent(new Instrumento());
