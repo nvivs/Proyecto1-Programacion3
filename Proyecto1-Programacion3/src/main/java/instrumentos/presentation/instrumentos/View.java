@@ -36,6 +36,7 @@ public class View implements Observer {
     private JTextField tolerancia;
     private JComboBox tipo;
     private JLabel TipoLbl;
+    private JButton UploadFile;
 
     public View() {
         search.addActionListener(new ActionListener() {
@@ -115,6 +116,27 @@ public class View implements Observer {
                 }
                 actualizarComboBox();
 
+            }
+        });
+        UploadFile.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Seleccionar archivo Excel");
+                fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                        "Archivos Excel (*.xlsx)", "xlsx"
+                ));
+
+                int result = fileChooser.showOpenDialog(panel);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = fileChooser.getSelectedFile();
+                    try {
+                        controller.uploadFile(selectedFile);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(panel, ex.getMessage(),
+                                "Resultado de carga", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
             }
         });
     }

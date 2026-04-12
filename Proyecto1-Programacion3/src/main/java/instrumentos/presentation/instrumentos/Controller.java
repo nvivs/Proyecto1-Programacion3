@@ -19,6 +19,10 @@ import instrumentos.logic.Calibraciones;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
 import instrumentos.logic.TipoInstrumento;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Controller{
@@ -183,6 +187,80 @@ public class Controller{
             document.close();
         }catch (Exception e){
             throw new Exception("No se pudo crear el PDF");
+        }
+    }
+    public void uploadFile(File file) throws Exception {
+        if (file == null || !file.exists()) {
+            throw new Exception("ARCHIVO NO VÁLIDO");
+        }
+
+        List<Instrumento> creados = new ArrayList<>();
+        List<String> errores = new ArrayList<>();
+
+        try (FileInputStream fis = new FileInputStream(file);
+             org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
+
+            org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                try {
+                    String serie = getCellValue(row, 0);
+                    String tipo = getCellValue(row, 1);
+                    String descripcion = getCellValue(row, 2);
+                    String minimo = getCellValue(row, 3);
+                    String maximo = getCellValue(row, 4);
+                    String tolerancia = getCellValue(row, 5);
+
+                    if (serie.isEmpty() || tipo.isEmpty() || descripcion.isEmpty() || minimo.isEmpty() || maximo.isEmpty() || tolerancia.isEmpty() ) {
+                        errores.add("Fila " + (i + 1) + ": datos incompletos, omitida.");
+                        continue;
+                    }
+
+                    Instrumento t = new Instrumento();
+                    t.setSerie(serie);
+                    t.setDescripcion(descripcion);
+                    t.setMinimo(Integer.parseInt(minimo));
+                    t.setMaximo(Integer.parseInt(maximo));
+                    t.setTolerancia(Integer.parseInt(tolerancia));
+                    Service.instance().create(t);
+                    creados.add(t);
+
+                } catch (Exception ex) {
+                    errores.add("Fila " + (i + 1) + ": " + ex.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
+        }
+
+        model.setList(Service.instance().search(new Instrumento()));
+        model.setCurrent(new Instrumento());
+        model.setMode(1);
+        model.commit();
+
+        StringBuilder msg = new StringBuilder();
+        msg.append(creados.size()).append(" tipo(s) creado(s) exitosamente.");
+        if (!errores.isEmpty()) {
+            msg.append("\n\nAdvertencias:\n");
+            errores.forEach(e -> msg.append("• ").append(e).append("\n"));
+        }
+        throw new Exception(msg.toString());
+    }
+
+    private String getCellValue(org.apache.poi.ss.usermodel.Row row, int col) {
+        org.apache.poi.ss.usermodel.Cell cell = row.getCell(
+                col, org.apache.poi.ss.usermodel.Row.MissingCellPolicy.RETURN_BLANK_AS_NULL
+        );
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:  return cell.getStringCellValue().trim();
+            case NUMERIC: return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            default:      return "";
         }
     }
 }

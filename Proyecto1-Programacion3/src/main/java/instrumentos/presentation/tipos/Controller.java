@@ -16,7 +16,19 @@ import com.itextpdf.layout.properties.TextAlignment;
 import instrumentos.logic.Instrumento;
 import instrumentos.logic.Service;
 import instrumentos.logic.TipoInstrumento;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.List;
+
+import static java.sql.JDBCType.BOOLEAN;
+import static java.sql.JDBCType.NUMERIC;
+import static javax.management.openmbean.SimpleType.STRING;
 
 public class Controller{
     View view;
@@ -144,6 +156,75 @@ public class Controller{
             document.close();
         }catch (Exception e){
             throw new Exception("No se pudo crear el PDF");
+        }
+    }
+    public void uploadFile(File file) throws Exception {
+        if (file == null || !file.exists()) {
+            throw new Exception("ARCHIVO NO VÁLIDO");
+        }
+
+        List<TipoInstrumento> creados = new ArrayList<>();
+        List<String> errores = new ArrayList<>();
+
+        try (FileInputStream fis = new FileInputStream(file);
+             org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
+
+            org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                try {
+                    String codigo = getCellValue(row, 0);
+                    String nombre = getCellValue(row, 1);
+                    String unidad = getCellValue(row, 2);
+
+                    if (codigo.isEmpty() || nombre.isEmpty() || unidad.isEmpty()) {
+                        errores.add("Fila " + (i + 1) + ": datos incompletos, omitida.");
+                        continue;
+                    }
+
+                    TipoInstrumento t = new TipoInstrumento();
+                    t.setCodigo(codigo);
+                    t.setNombre(nombre);
+                    t.setUnidad(unidad);
+                    Service.instance().create(t);
+                    creados.add(t);
+
+                } catch (Exception ex) {
+                    errores.add("Fila " + (i + 1) + ": " + ex.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
+        }
+
+        model.setList(Service.instance().search(new TipoInstrumento()));
+        model.setCurrent(new TipoInstrumento());
+        model.setMode(1);
+        model.commit();
+
+        StringBuilder msg = new StringBuilder();
+        msg.append(creados.size()).append(" tipo(s) creado(s) exitosamente.");
+        if (!errores.isEmpty()) {
+            msg.append("\n\nAdvertencias:\n");
+            errores.forEach(e -> msg.append("• ").append(e).append("\n"));
+        }
+        throw new Exception(msg.toString());
+    }
+
+    private String getCellValue(org.apache.poi.ss.usermodel.Row row, int col) {
+        org.apache.poi.ss.usermodel.Cell cell = row.getCell(
+                col, org.apache.poi.ss.usermodel.Row.MissingCellPolicy.RETURN_BLANK_AS_NULL
+        );
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:  return cell.getStringCellValue().trim();
+            case NUMERIC: return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            default:      return "";
         }
     }
 }
