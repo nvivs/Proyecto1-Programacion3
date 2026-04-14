@@ -159,6 +159,9 @@ public class Controller{
         }
     }
     public void uploadFile(File file) throws Exception {
+        long inicio = System.currentTimeMillis(); //  inicio
+        System.out.println("Inicio de carga: " + new java.util.Date(inicio));
+
         if (file == null || !file.exists()) {
             throw new Exception("ARCHIVO NO VÁLIDO");
         }
@@ -206,8 +209,14 @@ public class Controller{
         model.setMode(1);
         model.commit();
 
+        long fin = System.currentTimeMillis(); // fin
+        long duracion = fin - inicio;
+        System.out.println("Fin de carga: " + new java.util.Date(fin));
+        System.out.println("Duración total: " + duracion + " ms");
+
         StringBuilder msg = new StringBuilder();
         msg.append(creados.size()).append(" tipo(s) creado(s) exitosamente.");
+        msg.append("\n\nTiempo de carga: " + duracion + " ms"); //
         if (!errores.isEmpty()) {
             msg.append("\n\nAdvertencias:\n");
             errores.forEach(e -> msg.append("• ").append(e).append("\n"));
