@@ -38,7 +38,8 @@ public class View implements Observer {
                     filter.setNombre(searchNombre.getText());
                     controller.search(filter);
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(),
+                            "Resultado de búsqueda", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });

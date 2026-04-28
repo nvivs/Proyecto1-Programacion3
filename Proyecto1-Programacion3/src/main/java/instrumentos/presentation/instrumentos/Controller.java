@@ -46,7 +46,10 @@ public class Controller{
     }
     public Instrumento getCurrent(){return model.getCurrent();}
 
-    public void search(Instrumento filter) throws  Exception{
+    public void search(Instrumento filter) throws Exception {
+        long inicio = System.currentTimeMillis();
+        System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
+
         List<Instrumento> rows = Service.instance().search(filter);
         if (rows.isEmpty()) {
             throw new Exception("NINGUN REGISTRO COINCIDE");
@@ -55,6 +58,13 @@ public class Controller{
         model.setCurrent(new Instrumento());
         model.setMode(1);
         model.commit();
+
+        long fin = System.currentTimeMillis();
+        long duracion = fin - inicio;
+        System.out.println("Fin de búsqueda: " + new java.util.Date(fin));
+        System.out.println("Duración total: " + duracion + " ms");
+
+        throw new Exception(rows.size() + " registro(s) encontrado(s).\n\nTiempo de búsqueda: " + duracion + " ms");
     }
 
     public void delete (Instrumento filter) throws Exception {
