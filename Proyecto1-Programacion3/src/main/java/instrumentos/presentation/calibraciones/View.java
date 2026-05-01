@@ -115,6 +115,7 @@ public class View implements Observer{
                 }
             }
         });
+         
         panel.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
