@@ -43,11 +43,12 @@ public class View implements Observer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    Instrumento filter= new Instrumento();
+                    Instrumento filter = new Instrumento();
                     filter.setDescripcion(searchDescripcion.getText());
                     controller.search(filter);
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(),
+                            "Resultado de búsqueda", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });

@@ -110,10 +110,12 @@ public class View implements Observer{
                     controller.search(filter);
                     textoRojo.setText(controller.getSelectedInstrumento().toString());
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(),
+                            "Resultado de búsqueda", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
+         
         panel.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {

@@ -45,6 +45,9 @@ public class Controller {
     }
 
     public void search(Calibraciones filter) throws Exception{
+        long inicio = System.currentTimeMillis();
+        System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
+
         filter.setInstrumento(controller.getCurrent());
         List<Calibraciones> rows = Service.instance().search(filter);
         if (rows.isEmpty()) {
@@ -55,6 +58,14 @@ public class Controller {
         model.setCurrent(new Calibraciones());
         model.setMode(1);
         model.commit();
+
+        long fin = System.currentTimeMillis();
+        long duracion = fin - inicio;
+        System.out.println("Fin de búsqueda: " + new java.util.Date(fin));
+        System.out.println("Duración total: " + duracion + " ms");
+
+        throw new Exception(rows.size() + " registro(s) encontrado(s).\n\nTiempo de búsqueda: " + duracion + " ms");
+
     }
     public void delete (Calibraciones filter) throws Exception {
         try {
