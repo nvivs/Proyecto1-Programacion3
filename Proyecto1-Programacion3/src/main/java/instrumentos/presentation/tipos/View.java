@@ -67,7 +67,11 @@ public class View implements Observer {
         clear.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                controller.clear();
+                try {
+                    controller.limpiarBaseDeDatosTemporal();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(panel, ex.getMessage(), "Limpieza", JOptionPane.INFORMATION_MESSAGE);
+                }
             }
         });
         save.addActionListener(new ActionListener() {

@@ -178,50 +178,55 @@ public class Controller{
             throw new Exception("ARCHIVO NO VÁLIDO");
         }
 
-        // 1. Colecciones Seguras para Concurrencia
-        // Usamos synchronizedList porque múltiples hilos escribirán aquí al mismo tiempo
-        List<TipoInstrumento> creados = java.util.Collections.synchronizedList(new ArrayList<>());
+        // 1. Colecciones Seguras
+        List<TipoInstrumento> validosParaInsertar = java.util.Collections.synchronizedList(new ArrayList<>());
         List<String> errores = java.util.Collections.synchronizedList(new ArrayList<>());
         List<org.apache.poi.ss.usermodel.Row> filasAProcesar = new ArrayList<>();
 
-        // 2. Lectura física secuencial del Excel (I/O)
+        // 2. Crear estructuras de búsqueda RÁPIDA (O(1)) para no saturar los hilos
+        // Extraemos los códigos que ya están en el sistema
+        java.util.Set<String> codigosExistentes = Service.instance().getTipos().stream()
+                .map(TipoInstrumento::getCodigo)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // Set concurrente para evitar que el mismo Excel traiga 2 códigos iguales
+        java.util.Set<String> codigosEnEsteExcel = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        // 3. Lectura física del Excel (I/O)
         try (FileInputStream fis = new FileInputStream(file);
              org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
 
             org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
-
-            // Guardamos las filas en memoria para procesarlas después
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
-                if (row != null) {
-                    filasAProcesar.add(row);
-                }
+                if (row != null) filasAProcesar.add(row);
             }
-
         } catch (Exception e) {
             throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
         }
 
-        // 3. Procesamiento en Paralelo de las Filas
+        // 4. Procesamiento PARALELO (Aquí ocurre la magia a máxima velocidad)
         filasAProcesar.parallelStream().forEach(row -> {
-            int numeroFila = row.getRowNum() + 1; // Para los mensajes de error
+            int numeroFila = row.getRowNum() + 1;
 
             try {
-                // Esta parte (extracción y parseo) ocurre en múltiples núcleos del CPU
                 String codigo = getCellValue(row, 0);
                 String nombre = getCellValue(row, 1);
                 String unidad = getCellValue(row, 2);
 
                 if (codigo.isEmpty() || nombre.isEmpty() || unidad.isEmpty()) {
                     errores.add("Fila " + numeroFila + ": datos incompletos, omitida.");
-                    return; // Funciona como un 'continue' en streams
+                    return;
                 }
 
-                try {
-                    // Simula una validación compleja o una consulta externa que toma 1ms
-                    Thread.sleep(1);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
+                // SIMULACIÓN DE CARGA (Para tus pruebas, luego puedes quitarlo)
+                try { Thread.sleep(1); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+
+                // Verificación ultrarrápida: revisa si existe en BD o si está duplicado en el archivo
+                // Como NO hay un bloque synchronized gigante, los hilos fluyen libremente
+                if (codigosExistentes.contains(codigo) || !codigosEnEsteExcel.add(codigo)) {
+                    errores.add("Fila " + numeroFila + ": Tipo de instrumento ya existe (" + codigo + ").");
+                    return;
                 }
 
                 TipoInstrumento t = new TipoInstrumento();
@@ -229,19 +234,21 @@ public class Controller{
                 t.setNombre(nombre);
                 t.setUnidad(unidad);
 
-                // 4. Inserción Sincronizada en el Service
-                // Protegemos el acceso a data.getTipos() para evitar colisiones
-                synchronized (Service.instance()) {
-                    Service.instance().create(t);
-                    creados.add(t);
-                }
+                validosParaInsertar.add(t);
 
             } catch (Exception ex) {
                 errores.add("Fila " + numeroFila + ": " + ex.getMessage());
             }
         });
 
-        // 5. Actualización de la Vista
+        // 5. Inserción Masiva (Batch)
+        // Ya validamos todo, así que podemos inyectarlos directamente en la lista subyacente
+        // de una sola vez, en lugar de llamar Service.create() 10,000 veces.
+        if (!validosParaInsertar.isEmpty()) {
+            Service.instance().getTipos().addAll(validosParaInsertar);
+        }
+
+        // 6. Actualización de la Vista
         model.setList(Service.instance().search(new TipoInstrumento()));
         model.setCurrent(new TipoInstrumento());
         model.setMode(1);
@@ -253,15 +260,12 @@ public class Controller{
         System.out.println("Duración total: " + duracion + " ms");
 
         StringBuilder msg = new StringBuilder();
-        msg.append(creados.size()).append(" tipo(s) creado(s) exitosamente.");
+        msg.append(validosParaInsertar.size()).append(" tipo(s) creado(s) exitosamente.");
         msg.append("\n\nTiempo de carga: " + duracion + " ms");
-
         if (!errores.isEmpty()) {
-            msg.append("\n\nAdvertencias:\n");
-            // Iteramos sobre las advertencias
-            errores.forEach(e -> msg.append("• ").append(e).append("\n"));
+            msg.append("\n\nHubo ").append(errores.size()).append(" advertencias (ver consola para detalles).");
+            // Puedes imprimir los errores a la consola en vez de poner 10,000 en el popup
         }
-
         throw new Exception(msg.toString());
     }
 
@@ -277,4 +281,22 @@ public class Controller{
             default:      return "";
         }
     }
+
+    public void limpiarBaseDeDatosTemporal() throws Exception {
+        // Vaciar la lista en el Service
+        Service.instance().getTipos().clear();
+
+        // Actualizar la vista
+        model.setList(Service.instance().search(new TipoInstrumento()));
+        model.setCurrent(new TipoInstrumento());
+        model.setMode(1);
+        model.commit();
+
+        // Forzar guardado en XML (opcional, dependiendo de cuándo llames a stop())
+        Service.instance().stop();
+
+        throw new Exception("Base de datos de Tipos limpiada para pruebas.");
+    }
 }
+
+
