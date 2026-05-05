@@ -171,30 +171,51 @@ public class Controller{
     }
 
     public void uploadFile(File file) throws Exception {
-        long inicio = System.currentTimeMillis();
+        long inicio = System.currentTimeMillis(); //  inicio
         System.out.println("Inicio de carga: " + new java.util.Date(inicio));
 
         if (file == null || !file.exists()) {
             throw new Exception("ARCHIVO NO VÁLIDO");
         }
 
-        // 1. Colecciones Seguras para Concurrencia
-        // Usamos synchronizedList porque múltiples hilos escribirán aquí al mismo tiempo
-        List<TipoInstrumento> creados = java.util.Collections.synchronizedList(new ArrayList<>());
-        List<String> errores = java.util.Collections.synchronizedList(new ArrayList<>());
-        List<org.apache.poi.ss.usermodel.Row> filasAProcesar = new ArrayList<>();
+        List<TipoInstrumento> creados = new ArrayList<>();
+        List<String> errores = new ArrayList<>();
 
-        // 2. Lectura física secuencial del Excel (I/O)
         try (FileInputStream fis = new FileInputStream(file);
              org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
 
             org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
 
-            // Guardamos las filas en memoria para procesarlas después
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
-                if (row != null) {
-                    filasAProcesar.add(row);
+                if (row == null) continue;
+
+                try {
+                    String codigo = getCellValue(row, 0);
+                    String nombre = getCellValue(row, 1);
+                    String unidad = getCellValue(row, 2);
+
+                    if (codigo.isEmpty() || nombre.isEmpty() || unidad.isEmpty()) {
+                        errores.add("Fila " + (i + 1) + ": datos incompletos, omitida.");
+                        continue;
+                    }
+
+                    try {
+                        // Simula una validación compleja o una consulta externa que toma 1ms
+                        Thread.sleep(1);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+
+                    TipoInstrumento t = new TipoInstrumento();
+                    t.setCodigo(codigo);
+                    t.setNombre(nombre);
+                    t.setUnidad(unidad);
+                    Service.instance().create(t);
+                    creados.add(t);
+
+                } catch (Exception ex) {
+                    errores.add("Fila " + (i + 1) + ": " + ex.getMessage());
                 }
             }
 
@@ -202,69 +223,25 @@ public class Controller{
             throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
         }
 
-        // 3. Procesamiento en Paralelo de las Filas
-        filasAProcesar.parallelStream().forEach(row -> {
-            int numeroFila = row.getRowNum() + 1; // Para los mensajes de error
-
-            try {
-                // Esta parte (extracción y parseo) ocurre en múltiples núcleos del CPU
-                String codigo = getCellValue(row, 0);
-                String nombre = getCellValue(row, 1);
-                String unidad = getCellValue(row, 2);
-
-                if (codigo.isEmpty() || nombre.isEmpty() || unidad.isEmpty()) {
-                    errores.add("Fila " + numeroFila + ": datos incompletos, omitida.");
-                    return; // Funciona como un 'continue' en streams
-                }
-
-                try {
-                    // Simula una validación compleja o una consulta externa que toma 1ms
-                    Thread.sleep(1);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-
-                TipoInstrumento t = new TipoInstrumento();
-                t.setCodigo(codigo);
-                t.setNombre(nombre);
-                t.setUnidad(unidad);
-
-                // 4. Inserción Sincronizada en el Service
-                // Protegemos el acceso a data.getTipos() para evitar colisiones
-                synchronized (Service.instance()) {
-                    Service.instance().create(t);
-                    creados.add(t);
-                }
-
-            } catch (Exception ex) {
-                errores.add("Fila " + numeroFila + ": " + ex.getMessage());
-            }
-        });
-
-        // 5. Actualización de la Vista
         model.setList(Service.instance().search(new TipoInstrumento()));
         model.setCurrent(new TipoInstrumento());
         model.setMode(1);
         model.commit();
 
-        long fin = System.currentTimeMillis();
+        long fin = System.currentTimeMillis(); // fin
         long duracion = fin - inicio;
         System.out.println("Fin de carga: " + new java.util.Date(fin));
         System.out.println("Duración total: " + duracion + " ms");
 
         StringBuilder msg = new StringBuilder();
         msg.append(creados.size()).append(" tipo(s) creado(s) exitosamente.");
-        msg.append("\n\nTiempo de carga: " + duracion + " ms");
-
+        msg.append("\n\nTiempo de carga: " + duracion + " ms"); //
         if (!errores.isEmpty()) {
             msg.append("\n\nAdvertencias:\n");
-            // Iteramos sobre las advertencias
             errores.forEach(e -> msg.append("• ").append(e).append("\n"));
         }
-
         throw new Exception(msg.toString());
     }
-
     private String getCellValue(org.apache.poi.ss.usermodel.Row row, int col) {
         org.apache.poi.ss.usermodel.Cell cell = row.getCell(
                 col, org.apache.poi.ss.usermodel.Row.MissingCellPolicy.RETURN_BLANK_AS_NULL
