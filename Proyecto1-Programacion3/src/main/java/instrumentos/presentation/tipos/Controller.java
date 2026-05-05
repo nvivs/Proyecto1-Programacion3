@@ -219,7 +219,7 @@ public class Controller{
                     return;
                 }
 
-                // SIMULACIÓN DE CARGA (Para tus pruebas, luego puedes quitarlo)
+                // SIMULACIÓN DE CARGA
                 try { Thread.sleep(1); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
 
                 // Verificación ultrarrápida: revisa si existe en BD o si está duplicado en el archivo
