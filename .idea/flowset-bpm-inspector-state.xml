@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="bpmstudio-bpm-inspector-state">
+    <option name="statesByFile">
+      <map>
+        <entry key="$PROJECT_DIR$/Proyecto1-Programacion3/src/main/java/instrumentos/presentation/acerca/View.form">
+          <value>
+            <FileInspectorState>
+              <option name="statesByElementId">
+                <map>
+                  <entry key="Form_0ja9dr7">
+                    <value>
+                      <ExpandedItems />
+                    </value>
+                  </entry>
+                  <entry key="Form_0zu98fi">
+                    <value>
+                      <ExpandedItems />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </FileInspectorState>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/Proyecto1-Programacion3/src/main/java/instrumentos/presentation/calibraciones/View.form">
+          <value>
+            <FileInspectorState>
+              <option name="statesByElementId">
+                <map>
+                  <entry key="Form_0e4zmav">
+                    <value>
+                      <ExpandedItems />
+                    </value>
+                  </entry>
+                  <entry key="Form_0ja9dr7">
+                    <value>
+                      <ExpandedItems />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </FileInspectorState>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/Proyecto1-Programacion3/src/main/java/instrumentos/presentation/instrumentos/View.form">
+          <value>
+            <FileInspectorState>
+              <option name="statesByElementId">
+                <map>
+                  <entry key="Form_0e4zmav">
+                    <value>
+                      <ExpandedItems />
+                    </value>
+                  </entry>
+                  <entry key="Form_15si8yq">
+                    <value>
+                      <ExpandedItems />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </FileInspectorState>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
