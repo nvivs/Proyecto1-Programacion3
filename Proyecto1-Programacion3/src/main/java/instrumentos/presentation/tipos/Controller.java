@@ -25,6 +25,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static java.sql.JDBCType.BOOLEAN;
 import static java.sql.JDBCType.NUMERIC;
@@ -46,6 +49,32 @@ public class Controller{
     public void search(TipoInstrumento filter) throws  Exception{
         long inicio = System.currentTimeMillis();
         System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
+
+        // Simula latencia de backend distribuida entre hilos para pruebas de paralelización
+        final long totalDelayMs = 10000L; // tiempo total a simular
+        int numThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
+        long perThread = totalDelayMs / numThreads;
+        long remainder = totalDelayMs % numThreads;
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        for (int i = 0; i < numThreads; i++) {
+            final long sleepMs = perThread + (i == 0 ? remainder : 0);
+            executor.submit(() -> {
+                try {
+                    Thread.sleep(sleepMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(totalDelayMs + 2000, TimeUnit.MILLISECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException ie) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
 
         List<TipoInstrumento> rows = Service.instance().search(filter);
         if (rows.isEmpty()) {
