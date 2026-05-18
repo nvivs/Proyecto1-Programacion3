@@ -59,6 +59,12 @@ public class Controller{
         model.setMode(1);
         model.commit();
 
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+
         long fin = System.currentTimeMillis();
         long duracion = fin - inicio;
         System.out.println("Fin de búsqueda: " + new java.util.Date(fin));
@@ -230,6 +236,13 @@ public class Controller{
                     if (serie.isEmpty() || tipo.isEmpty() || descripcion.isEmpty() || minimo.isEmpty() || maximo.isEmpty() || tolerancia.isEmpty() ) {
                         errores.add("Fila " + (i + 1) + ": datos incompletos, omitida.");
                         continue;
+                    }
+
+                    try {
+                        // Simula una validación compleja o una consulta externa que toma 1ms
+                        Thread.sleep(1);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
                     }
 
                     Instrumento t = new Instrumento();
