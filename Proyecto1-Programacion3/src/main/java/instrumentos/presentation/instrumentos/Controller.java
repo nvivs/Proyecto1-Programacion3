@@ -269,6 +269,7 @@ public class Controller{
                         continue;
                     }
 
+
                     try {
                         // Simula una validación compleja o una consulta externa que toma 1ms
                         Thread.sleep(1);
@@ -276,8 +277,19 @@ public class Controller{
                         Thread.currentThread().interrupt();
                     }
 
+                    TipoInstrumento inst;
+                    try {
+                        TipoInstrumento filtro = new TipoInstrumento();
+                        filtro.setCodigo(tipo);
+                        inst = Service.instance().read(filtro);
+                    } catch (Exception ex) {
+                        errores.add("Fila " + (i + 1) + ": Tipo instrumento '" + tipo + "' no encontrado.");
+                        continue;
+                    }
+
                     Instrumento t = new Instrumento();
                     t.setSerie(serie);
+                    t.setTipo(inst);
                     t.setDescripcion(descripcion);
                     t.setMinimo(Integer.parseInt(minimo));
                     t.setMaximo(Integer.parseInt(maximo));
