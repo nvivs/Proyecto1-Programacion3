@@ -115,7 +115,8 @@ public class View implements Observer{
                 }
             }
         });
-         
+
+
         panel.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
@@ -181,7 +182,7 @@ public class View implements Observer{
         });
     }
 //----------------------------------------------------------------------------------------------------------------------
-    private boolean isValid(){
+     private boolean isValid(){
         boolean valid = true;
         if(numeroTextField.getText().isEmpty()){
             labelNumero.setBackground(Color.red);
