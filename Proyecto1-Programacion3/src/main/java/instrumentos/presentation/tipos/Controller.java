@@ -25,12 +25,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import static java.sql.JDBCType.BOOLEAN;
 import static java.sql.JDBCType.NUMERIC;
 import static javax.management.openmbean.SimpleType.STRING;
 
 public class Controller{
+    private static final long SEARCH_SIMULATION_MS = 10000L;
     View view;
 
     Model model;
@@ -47,6 +51,8 @@ public class Controller{
         long inicio = System.currentTimeMillis();
         System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
 
+        simulateCpuWorkMillis();
+
         List<TipoInstrumento> rows = Service.instance().search(filter);
         if (rows.isEmpty()) {
             throw new Exception("NINGUN REGISTRO COINCIDE");
@@ -56,12 +62,6 @@ public class Controller{
         model.setMode(1);
         model.commit();
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
-
         long fin = System.currentTimeMillis();
         long duracion = fin - inicio;
         System.out.println("Fin de búsqueda: " + new java.util.Date(fin));
@@ -69,6 +69,37 @@ public class Controller{
 
         throw new Exception(rows.size() + " registro(s) encontrado(s).\n\nTiempo de búsqueda: " + duracion + " ms");
 
+    }
+
+    private void simulateCpuWorkMillis() {
+        long startNs = System.nanoTime();
+        long targetNs = startNs + SEARCH_SIMULATION_MS * 1_000_000L;
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] data = ("search-" + startNs).getBytes(StandardCharsets.UTF_8);
+            long counter = 0;
+            int checksum = 0;
+
+            while (System.nanoTime() < targetNs) {
+                md.update(data);
+                md.update(Long.toString(counter++).getBytes(StandardCharsets.UTF_8));
+                data = md.digest();
+                checksum += (data[0] & 0xff);
+            }
+
+            if (checksum == Integer.MIN_VALUE) {
+                System.out.println(checksum);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            long busyUntil = System.nanoTime() + SEARCH_SIMULATION_MS * 1_000_000L;
+            long counter = 0;
+            while (System.nanoTime() < busyUntil) {
+                counter += (counter << 1) ^ 0x9e3779b97f4a7c15L;
+            }
+            if (counter == Long.MIN_VALUE) {
+                System.out.println(counter);
+            }
+        }
     }
 
     public void delete (TipoInstrumento filter) throws Exception {
