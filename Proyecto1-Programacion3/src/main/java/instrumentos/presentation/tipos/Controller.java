@@ -23,8 +23,12 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -50,31 +54,8 @@ public class Controller{
         long inicio = System.currentTimeMillis();
         System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
 
-        // Simula latencia de backend distribuida entre hilos para pruebas de paralelización
-        final long totalDelayMs = 10000L; // tiempo total a simular
-        int numThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
-        long perThread = totalDelayMs / numThreads;
-        long remainder = totalDelayMs % numThreads;
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        for (int i = 0; i < numThreads; i++) {
-            final long sleepMs = perThread + (i == 0 ? remainder : 0);
-            executor.submit(() -> {
-                try {
-                    Thread.sleep(sleepMs);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-            });
-        }
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(totalDelayMs + 2000, TimeUnit.MILLISECONDS)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException ie) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        // Simula carga CPU real distribuida entre múltiples hilos
+        simulateCpuWorkParallel();
 
         List<TipoInstrumento> rows = Service.instance().search(filter);
         if (rows.isEmpty()) {
@@ -325,6 +306,89 @@ public class Controller{
         Service.instance().stop();
 
         throw new Exception("Base de datos de Tipos limpiada para pruebas.");
+    }
+
+    /**
+     * Simula carga de CPU real distribuida entre múltiples threads (paralelización).
+     * Cada thread realiza trabajo de SHA-256 repetido para consumir ciclos de CPU.
+     * 
+     * IMPORTANTE: El trabajo se DISTRIBUYE entre los threads, no se replica.
+     * - Versión secuencial: 1 thread × 10 segundos = 10 segundos reales
+     * - Versión paralela: 4 threads × (10/4 segundos cada uno) = ~2.5 segundos reales
+     */
+    private void simulateCpuWorkParallel() {
+        final long TOTAL_WORK_MS = 10000L; // 10 segundos de TRABAJO TOTAL
+        int numThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
+        long workPerThread = TOTAL_WORK_MS / numThreads; // Distribuir equitativamente
+        long remainderMs = TOTAL_WORK_MS % numThreads; // Asignar residuo al primer thread
+        
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch latch = new CountDownLatch(numThreads);
+
+        System.out.println("[CPU PARALLEL] Iniciando simulación con " + numThreads + " threads...");
+        System.out.println("[CPU PARALLEL] Trabajo total: " + TOTAL_WORK_MS + " ms distribuido en " + workPerThread + " ms por thread");
+        long startTime = System.currentTimeMillis();
+
+        // Lanzar trabajo CPU en cada thread
+        for (int threadId = 0; threadId < numThreads; threadId++) {
+            final int id = threadId;
+            // El primer thread trabaja más si hay residuo
+            final long workMs = workPerThread + (threadId == 0 ? remainderMs : 0);
+            
+            executor.submit(() -> {
+                try {
+                    long targetNs = System.nanoTime() + workMs * 1_000_000L;
+                    MessageDigest md = MessageDigest.getInstance("SHA-256");
+                    byte[] data = ("worker-" + id + "-" + System.nanoTime()).getBytes(StandardCharsets.UTF_8);
+                    long counter = 0;
+                    int checksum = 0;
+
+                    // Ejecutar trabajo CPU distribuido
+                    while (System.nanoTime() < targetNs) {
+                        md.update(data);
+                        md.update(Long.toString(counter++).getBytes(StandardCharsets.UTF_8));
+                        data = md.digest();
+                        checksum += (data[0] & 0xff);
+                    }
+
+                    // Evitar que el compilador optimice el bucle
+                    if (checksum == Integer.MIN_VALUE) {
+                        System.out.println("[Worker " + id + "] Checksum: " + checksum);
+                    }
+
+                } catch (NoSuchAlgorithmException e) {
+                    // Fallback: trabajo CPU basado en operaciones bitwise
+                    long busyUntil = System.nanoTime() + workMs * 1_000_000L;
+                    long counter = 0;
+                    while (System.nanoTime() < busyUntil) {
+                        counter += (counter << 1) ^ 0x9e3779b97f4a7c15L;
+                    }
+                    if (counter == Long.MIN_VALUE) {
+                        System.out.println("[Worker " + Thread.currentThread().getId() + "] Counter: " + counter);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        // Esperar a que todos los threads terminen
+        executor.shutdown();
+        try {
+            // El timeout debe ser ligeramente mayor que workPerThread (no TOTAL_WORK_MS)
+            if (!latch.await(workPerThread + 2000, TimeUnit.MILLISECONDS)) {
+                System.out.println("[CPU PARALLEL] Advertencia: Algunos threads no terminaron a tiempo");
+            }
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        System.out.println("[CPU PARALLEL] Simulación completada en " + elapsed + " ms (Aceleración teórica: " + (TOTAL_WORK_MS / Math.max(1, elapsed)) + "x)");
     }
 }
 
