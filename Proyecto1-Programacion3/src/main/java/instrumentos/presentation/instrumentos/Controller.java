@@ -27,6 +27,10 @@ import java.util.List;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Controller{
     private static final long SEARCH_SIMULATION_MS = 10000L;
@@ -50,59 +54,6 @@ public class Controller{
     }
     public Instrumento getCurrent(){return model.getCurrent();}
 
-    public void search(Instrumento filter) throws Exception {
-        long inicio = System.currentTimeMillis();
-        System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
-
-        simulateCpuWorkMillis();
-
-        List<Instrumento> rows = Service.instance().search(filter);
-        if (rows.isEmpty()) {
-            throw new Exception("NINGUN REGISTRO COINCIDE");
-        }
-        model.setList(rows);
-        model.setCurrent(new Instrumento());
-        model.setMode(1);
-        model.commit();
-
-        long fin = System.currentTimeMillis();
-        long duracion = fin - inicio;
-        System.out.println("Fin de búsqueda: " + new java.util.Date(fin));
-        System.out.println("Duración total: " + duracion + " ms");
-
-        throw new Exception(rows.size() + " registro(s) encontrado(s).\n\nTiempo de búsqueda: " + duracion + " ms");
-    }
-
-    private void simulateCpuWorkMillis() {
-        long startNs = System.nanoTime();
-        long targetNs = startNs + SEARCH_SIMULATION_MS * 1_000_000L;
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] data = ("search-" + startNs).getBytes(StandardCharsets.UTF_8);
-            long counter = 0;
-            int checksum = 0;
-
-            while (System.nanoTime() < targetNs) {
-                md.update(data);
-                md.update(Long.toString(counter++).getBytes(StandardCharsets.UTF_8));
-                data = md.digest();
-                checksum += (data[0] & 0xff);
-            }
-
-            if (checksum == Integer.MIN_VALUE) {
-                System.out.println(checksum);
-            }
-        } catch (NoSuchAlgorithmException e) {
-            long busyUntil = System.nanoTime() + SEARCH_SIMULATION_MS * 1_000_000L;
-            long counter = 0;
-            while (System.nanoTime() < busyUntil) {
-                counter += (counter << 1) ^ 0x9e3779b97f4a7c15L;
-            }
-            if (counter == Long.MIN_VALUE) {
-                System.out.println(counter);
-            }
-        }
-    }
 
     public void delete (Instrumento filter) throws Exception {
         filter = model.getCurrent();
@@ -236,92 +187,207 @@ public class Controller{
             throw new Exception("No se pudo crear el PDF");
         }
     }
+    private void simulateCpuWorkParallel() {
+        final long TOTAL_WORK_MS = 10000L;
+        int numThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
+        long workPerThread = TOTAL_WORK_MS / numThreads;
+        long remainderMs = TOTAL_WORK_MS % numThreads;
+
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch latch = new CountDownLatch(numThreads);
+
+        System.out.println("[CPU PARALLEL] Iniciando simulación con " + numThreads + " threads...");
+        System.out.println("[CPU PARALLEL] Trabajo total: " + TOTAL_WORK_MS + " ms distribuido en " + workPerThread + " ms por thread");
+        long startTime = System.currentTimeMillis();
+
+        for (int threadId = 0; threadId < numThreads; threadId++) {
+            final int id = threadId;
+            final long workMs = workPerThread + (threadId == 0 ? remainderMs : 0);
+
+            executor.submit(() -> {
+                try {
+                    long targetNs = System.nanoTime() + workMs * 1_000_000L;
+                    MessageDigest md = MessageDigest.getInstance("SHA-256");
+                    byte[] data = ("worker-" + id + "-" + System.nanoTime()).getBytes(StandardCharsets.UTF_8);
+                    long counter = 0;
+                    int checksum = 0;
+
+                    while (System.nanoTime() < targetNs) {
+                        md.update(data);
+                        md.update(Long.toString(counter++).getBytes(StandardCharsets.UTF_8));
+                        data = md.digest();
+                        checksum += (data[0] & 0xff);
+                    }
+
+                    if (checksum == Integer.MIN_VALUE) {
+                        System.out.println("[Worker " + id + "] Checksum: " + checksum);
+                    }
+
+                } catch (NoSuchAlgorithmException e) {
+                    long busyUntil = System.nanoTime() + workMs * 1_000_000L;
+                    long counter = 0;
+                    while (System.nanoTime() < busyUntil) {
+                        counter += (counter << 1) ^ 0x9e3779b97f4a7c15L;
+                    }
+                    if (counter == Long.MIN_VALUE) {
+                        System.out.println("[Worker " + Thread.currentThread().getId() + "] Counter: " + counter);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        executor.shutdown();
+        try {
+            if (!latch.await(workPerThread + 2000, TimeUnit.MILLISECONDS)) {
+                System.out.println("[CPU PARALLEL] Advertencia: Algunos threads no terminaron a tiempo");
+            }
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        System.out.println("[CPU PARALLEL] Simulación completada en " + elapsed + " ms (Aceleración teórica: " + (TOTAL_WORK_MS / Math.max(1, elapsed)) + "x)");
+    }
+
+// ─── SEARCH PARALELO ────────────────────────────────────────────────────────
+
+    public void search(Instrumento filter) throws Exception {
+        long inicio = System.currentTimeMillis();
+        System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
+
+        // Simulación CPU paralela en lugar de serial
+        simulateCpuWorkParallel();
+
+        List<Instrumento> rows = Service.instance().search(filter);
+        if (rows.isEmpty()) {
+            throw new Exception("NINGUN REGISTRO COINCIDE");
+        }
+        model.setList(rows);
+        model.setCurrent(new Instrumento());
+        model.setMode(1);
+        model.commit();
+
+        long fin = System.currentTimeMillis();
+        long duracion = fin - inicio;
+        System.out.println("Fin de búsqueda: " + new java.util.Date(fin));
+        System.out.println("Duración total: " + duracion + " ms");
+
+        throw new Exception(rows.size() + " registro(s) encontrado(s).\n\nTiempo de búsqueda: " + duracion + " ms");
+    }
+
+// ─── UPLOAD PARALELO ─────────────────────────────────────────────────────────
+
     public void uploadFile(File file) throws Exception {
-        long inicio = System.currentTimeMillis(); //  inicio
+        long inicio = System.currentTimeMillis();
         System.out.println("Inicio de carga: " + new java.util.Date(inicio));
 
         if (file == null || !file.exists()) {
             throw new Exception("ARCHIVO NO VÁLIDO");
         }
 
-        List<Instrumento> creados = new ArrayList<>();
-        List<String> errores = new ArrayList<>();
+        // 1. Colecciones seguras para acceso concurrente
+        List<Instrumento> creados = java.util.Collections.synchronizedList(new ArrayList<>());
+        List<String> errores   = java.util.Collections.synchronizedList(new ArrayList<>());
+        List<org.apache.poi.ss.usermodel.Row> filasAProcesar = new ArrayList<>();
 
+        // 2. Mapa de TipoInstrumento precargado para búsqueda O(1) sin saturar hilos
+        //    Clave: código del tipo  →  Valor: objeto TipoInstrumento
+        java.util.Map<String, TipoInstrumento> tiposMap = new java.util.concurrent.ConcurrentHashMap<>();
+        Service.instance().getTipos().forEach(t -> tiposMap.put(t.getCodigo(), t));
+
+        // Set concurrente para detectar series duplicadas dentro del mismo Excel
+        java.util.Set<String> seriesEnEsteExcel = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        // 3. Lectura física del Excel (I/O) — sigue siendo serial (el archivo es un recurso único)
         try (FileInputStream fis = new FileInputStream(file);
              org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
 
             org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
-
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
-                if (row == null) continue;
-
-                try {
-                    String serie = getCellValue(row, 0);
-                    String tipo = getCellValue(row, 1);
-                    String descripcion = getCellValue(row, 2);
-                    String minimo = getCellValue(row, 3);
-                    String maximo = getCellValue(row, 4);
-                    String tolerancia = getCellValue(row, 5);
-
-                    if (serie.isEmpty() || tipo.isEmpty() || descripcion.isEmpty() || minimo.isEmpty() || maximo.isEmpty() || tolerancia.isEmpty() ) {
-                        errores.add("Fila " + (i + 1) + ": datos incompletos, omitida.");
-                        continue;
-                    }
-
-
-                    try {
-                        // Simula una validación compleja o una consulta externa que toma 1ms
-                        Thread.sleep(1);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-
-                    TipoInstrumento inst;
-                    try {
-                        TipoInstrumento filtro = new TipoInstrumento();
-                        filtro.setCodigo(tipo);
-                        inst = Service.instance().read(filtro);
-                    } catch (Exception ex) {
-                        errores.add("Fila " + (i + 1) + ": Tipo instrumento '" + tipo + "' no encontrado.");
-                        continue;
-                    }
-
-                    Instrumento t = new Instrumento();
-                    t.setSerie(serie);
-                    t.setTipo(inst);
-                    t.setDescripcion(descripcion);
-                    t.setMinimo(Integer.parseInt(minimo));
-                    t.setMaximo(Integer.parseInt(maximo));
-                    t.setTolerancia(Integer.parseInt(tolerancia));
-                    Service.instance().create(t);
-                    creados.add(t);
-
-                } catch (Exception ex) {
-                    errores.add("Fila " + (i + 1) + ": " + ex.getMessage());
-                }
+                if (row != null) filasAProcesar.add(row);
             }
-
         } catch (Exception e) {
             throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
         }
 
+        // 4. Procesamiento PARALELO de filas
+        filasAProcesar.parallelStream().forEach(row -> {
+            int numeroFila = row.getRowNum() + 1;
+
+            try {
+                String serie       = getCellValue(row, 0);
+                String tipo        = getCellValue(row, 1);
+                String descripcion = getCellValue(row, 2);
+                String minimo      = getCellValue(row, 3);
+                String maximo      = getCellValue(row, 4);
+                String tolerancia  = getCellValue(row, 5);
+
+                if (serie.isEmpty() || tipo.isEmpty() || descripcion.isEmpty()
+                        || minimo.isEmpty() || maximo.isEmpty() || tolerancia.isEmpty()) {
+                    errores.add("Fila " + numeroFila + ": datos incompletos, omitida.");
+                    return;
+                }
+
+                // Simulación de validación/consulta externa (1 ms)
+                try { Thread.sleep(1); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+
+                // Búsqueda O(1) en el mapa precargado — sin bloquear otros hilos
+                TipoInstrumento inst = tiposMap.get(tipo);
+                if (inst == null) {
+                    errores.add("Fila " + numeroFila + ": Tipo instrumento '" + tipo + "' no encontrado.");
+                    return;
+                }
+
+                // Detectar serie duplicada dentro del mismo Excel
+                if (!seriesEnEsteExcel.add(serie)) {
+                    errores.add("Fila " + numeroFila + ": Serie duplicada en el archivo (" + serie + ").");
+                    return;
+                }
+
+                Instrumento t = new Instrumento();
+                t.setSerie(serie);
+                t.setTipo(inst);
+                t.setDescripcion(descripcion);
+                t.setMinimo(Integer.parseInt(minimo));
+                t.setMaximo(Integer.parseInt(maximo));
+                t.setTolerancia(Integer.parseInt(tolerancia));
+
+                creados.add(t);
+
+            } catch (Exception ex) {
+                errores.add("Fila " + numeroFila + ": " + ex.getMessage());
+            }
+        });
+
+        // 5. Inserción masiva (batch) — una sola llamada en lugar de N llamadas individuales
+        if (!creados.isEmpty()) {
+            Service.instance().getInstrumentos().addAll(creados);
+        }
+
+        // 6. Actualización de la vista
         model.setList(Service.instance().search(new Instrumento()));
         model.setCurrent(new Instrumento());
         model.setMode(1);
         model.commit();
 
-        long fin = System.currentTimeMillis(); //  fin
+        long fin = System.currentTimeMillis();
         long duracion = fin - inicio;
         System.out.println("Fin de carga: " + new java.util.Date(fin));
         System.out.println("Duración total: " + duracion + " ms");
 
         StringBuilder msg = new StringBuilder();
-        msg.append(creados.size()).append(" tipo(s) creado(s) exitosamente.");
-        msg.append("\n\nTiempo de carga: " + duracion + " ms"); //
+        msg.append(creados.size()).append(" instrumento(s) creado(s) exitosamente.");
+        msg.append("\n\nTiempo de carga: ").append(duracion).append(" ms");
         if (!errores.isEmpty()) {
-            msg.append("\n\nAdvertencias:\n");
-            errores.forEach(e -> msg.append("• ").append(e).append("\n"));
+            msg.append("\n\nHubo ").append(errores.size()).append(" advertencias (ver consola para detalles).");
+            errores.forEach(e -> System.out.println("  • " + e));
         }
         throw new Exception(msg.toString());
     }
