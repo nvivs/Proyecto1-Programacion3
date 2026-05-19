@@ -106,16 +106,16 @@ public class Controller{
 
     public void delete (Instrumento filter) throws Exception {
         filter = model.getCurrent();
-            if(filter.getListCalibracion().isEmpty()){
+        if(filter.getListCalibracion().isEmpty()){
             List<Instrumento> nuevaL = Service.instance().delete(filter);
             model.setList(nuevaL);
             model.setCurrent(new Instrumento());
             model.setMode(1);
             model.commit();
-            }
-            else{
-                throw new Exception("NO SE PUEDE ELIMINAR EL INSTRUMENTO PORQUE EXISTEN CALIBRACIONES ASOCIADAS");
-            }
+        }
+        else{
+            throw new Exception("NO SE PUEDE ELIMINAR EL INSTRUMENTO PORQUE EXISTEN CALIBRACIONES ASOCIADAS");
+        }
     }
     public void edit(int row){
         Instrumento e = model.getList().get(row);
@@ -167,7 +167,7 @@ public class Controller{
         }
     }
     public List<Calibraciones> obtenerCalibraciones(){
-           return model.getList2();
+        return model.getList2();
     }
     public void setListaC(List<Calibraciones> c){
         model.setList2(c);
@@ -269,6 +269,7 @@ public class Controller{
                         continue;
                     }
 
+
                     try {
                         // Simula una validación compleja o una consulta externa que toma 1ms
                         Thread.sleep(1);
@@ -276,8 +277,19 @@ public class Controller{
                         Thread.currentThread().interrupt();
                     }
 
+                    TipoInstrumento inst;
+                    try {
+                        TipoInstrumento filtro = new TipoInstrumento();
+                        filtro.setCodigo(tipo);
+                        inst = Service.instance().read(filtro);
+                    } catch (Exception ex) {
+                        errores.add("Fila " + (i + 1) + ": Tipo instrumento '" + tipo + "' no encontrado.");
+                        continue;
+                    }
+
                     Instrumento t = new Instrumento();
                     t.setSerie(serie);
+                    t.setTipo(inst);
                     t.setDescripcion(descripcion);
                     t.setMinimo(Integer.parseInt(minimo));
                     t.setMaximo(Integer.parseInt(maximo));

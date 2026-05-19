@@ -13,7 +13,7 @@ import java.io.File;
 import java.util.Observable;
 import java.util.Observer;
 
-public class View implements Observer{
+public class View implements Observer {
     private JPanel panel;
     private JPanel panelInstrumento;
     private JPanel panelCalibracion;
@@ -36,44 +36,45 @@ public class View implements Observer{
     private JPanel panelMediciones;
     private JTable tablaMedidas;
     private JLabel textoRojo;
+    private JButton UploadFile;
 
-    //----------------------------------------------------------------------------------------------------------------------
-    public JPanel getPanel(){return panel;}
-    public JTextField getNumero(){ return numeroTextField; }
-    public JTextField getFecha(){ return fechaTextField; }
-    public JTextField getMediciones(){ return medicionesTextField; }
+    //------------------------------------------------------------------------------------------------------------------
+    public JPanel getPanel() { return panel; }
+    public JTextField getNumero() { return numeroTextField; }
+    public JTextField getFecha() { return fechaTextField; }
+    public JTextField getMediciones() { return medicionesTextField; }
 
-    public void setController(Controller controller) {
-        this.controller = controller;
-    }
+    public void setController(Controller controller) { this.controller = controller; }
     public void setModel(Model model) {
         this.model = model;
         model.addObserver(this);
     }
-//----------------------------------------------------------------------------------------------------------------------
+
+    //------------------------------------------------------------------------------------------------------------------
     Controller controller;
     Model model;
-//----------------------------------------------------------------------------------------------------------------------
-    public View(){
+
+    //------------------------------------------------------------------------------------------------------------------
+    public View() {
         guardarBotonCal.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Calibraciones filter = new Calibraciones();
                 filter.setNumero(FechaTextFieldBus.getText());
-                try{
-                    if(controller.getSelectedInstrumento().getTipo()==null){
+                try {
+                    if (controller.getSelectedInstrumento().getTipo() == null) {
                         throw new Exception("No se puede guardar");
                     }
-                    if(isValid()){
+                    if (isValid()) {
                         controller.save(filter);
                         controller.CreateMeasure();
                     }
-                } catch(Exception ex) {
+                } catch (Exception ex) {
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
-
                 }
             }
         });
+
         tabla.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -82,11 +83,12 @@ public class View implements Observer{
                 isValid();
             }
         });
+
         borrarBotonCal.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Calibraciones filter = new Calibraciones();
-                try{
+                try {
                     controller.delete(filter);
                     textoRojo.setText(controller.getSelectedInstrumento().toString());
                 } catch (Exception ex) {
@@ -94,6 +96,7 @@ public class View implements Observer{
                 }
             }
         });
+
         limpiarBotonCal.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -101,6 +104,7 @@ public class View implements Observer{
                 textoRojo.setText(controller.getSelectedInstrumento().toString());
             }
         });
+
         buscarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -116,6 +120,29 @@ public class View implements Observer{
             }
         });
 
+        UploadFile.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Seleccionar archivo Excel de Calibraciones");
+                fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                        "Archivos Excel (*.xlsx)", "xlsx"
+                ));
+
+                int result = fileChooser.showOpenDialog(panel);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = fileChooser.getSelectedFile();
+                    try {
+                        controller.uploadFile(selectedFile);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(panel,
+                                ex.getMessage(),
+                                "Resultado de carga",
+                                JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+            }
+        });
 
         panel.addComponentListener(new ComponentAdapter() {
             @Override
@@ -125,7 +152,7 @@ public class View implements Observer{
                     if (controller.getSelectedInstrumento().getTipo() == null) {
                         tabla.setVisible(false);
                         throw new Exception("NO ELIGIO UN INSTRUMENTO");
-                    } else{
+                    } else {
                         controller.setSelectedInstrumento();
                         tabla.setVisible(true);
                         tablaMedidas.setVisible(false);
@@ -134,15 +161,15 @@ public class View implements Observer{
                             filter.setFecha("");
                             controller.search(filter);
                         }
-
-                    textoRojo.setText(controller.getSelectedInstrumento().toString());
-                    textoRojo.setForeground(Color.red);
-                }
-                }catch (Exception ex){
+                        textoRojo.setText(controller.getSelectedInstrumento().toString());
+                        textoRojo.setForeground(Color.red);
+                    }
+                } catch (Exception ex) {
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "Información", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
+
         panel.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentHidden(ComponentEvent e) {
@@ -150,41 +177,44 @@ public class View implements Observer{
                 controller.setCurrent(new Calibraciones());
                 fechaTextField.setEnabled(true);
                 medicionesTextField.setEnabled(true);
-
                 super.componentHidden(e);
             }
         });
+
         panelMediciones.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
                 super.componentShown(e);
             }
         });
+
         tablaMedidas.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 controller.editarMedidas();
             }
         });
+
         reporteBoton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try{
+                try {
                     controller.createDocument();
-                    if(Desktop.isDesktopSupported()){
+                    if (Desktop.isDesktopSupported()) {
                         File archivo = new File("Calibraciones.pdf");
                         Desktop.getDesktop().open(archivo);
                     }
-                }catch (Exception ex){
+                } catch (Exception ex) {
                     JOptionPane.showMessageDialog(panel, ex.getMessage(), "ERROR", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
     }
-//----------------------------------------------------------------------------------------------------------------------
-     private boolean isValid(){
+
+    //------------------------------------------------------------------------------------------------------------------
+    private boolean isValid() {
         boolean valid = true;
-        if(numeroTextField.getText().isEmpty()){
+        if (numeroTextField.getText().isEmpty()) {
             labelNumero.setBackground(Color.red);
             numeroTextField.setToolTipText("Numero requerido");
             valid = false;
@@ -192,7 +222,7 @@ public class View implements Observer{
             labelNumero.setBackground(panel.getBackground());
             numeroTextField.setToolTipText(null);
         }
-        if(medicionesTextField.getText().isEmpty()){
+        if (medicionesTextField.getText().isEmpty()) {
             labelMediciones.setBackground(Color.red);
             medicionesTextField.setToolTipText("Medicion requerida");
             valid = false;
@@ -200,7 +230,7 @@ public class View implements Observer{
             labelMediciones.setBackground(panel.getBackground());
             medicionesTextField.setToolTipText(null);
         }
-        if(fechaTextField.getText().isEmpty()){
+        if (fechaTextField.getText().isEmpty()) {
             labelFecha.setBackground(Color.red);
             fechaTextField.setToolTipText("Fecha requerida");
             valid = false;
@@ -210,15 +240,15 @@ public class View implements Observer{
         }
         return valid;
     }
+
     @Override
-    public void update(Observable updatedModel, Object properties){
-        if(controller != null) {
+    public void update(Observable updatedModel, Object properties) {
+        if (controller != null) {
             int changedProps = (int) properties;
             if ((changedProps & Model.LIST) == Model.LIST) {
                 int[] cols = {TableModel.NUMERO, TableModel.FECHA, TableModel.MEDICIONES};
                 tabla.setModel(new TableModel(cols, controller.obtenerListaInstrumentos()));
                 tabla.setRowHeight(30);
-
                 TableColumnModel columnModel = tabla.getColumnModel();
                 columnModel.getColumn(2).setPreferredWidth(200);
             }
