@@ -47,6 +47,7 @@ public class Controller {
     }
     instrumentos.presentation.instrumentos.Controller controller;
 
+
     public Controller(Model model, View view) {
         this.view = view;
         this.model = model;
@@ -58,9 +59,6 @@ public class Controller {
     public void search(Calibraciones filter) throws Exception {
         long inicio = System.currentTimeMillis();
         System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
-
-        // Simula carga CPU real distribuida entre múltiples hilos
-        simulateCpuWorkParallel();
 
         filter.setInstrumento(controller.getCurrent());
         List<Calibraciones> rows = Service.instance().search(filter);
@@ -149,7 +147,6 @@ public class Controller {
         if (controller.getCurrent().getTipo() != null) { model.crearNumeros(); }
     }
 
-    //------------------------------------------------------------------------------------------------------------------
     public void setSelectedInstrumento() throws Exception {
         if (controller.getCurrent().getTipo() == null) {
             throw new Exception("No seleccionó ningún instrumento. No podrá agregar calibraciones");
@@ -204,8 +201,7 @@ public class Controller {
         }
         model.commit();
     }
-
-    //------------------------------------------------------------------------------------------------------------------
+    
     private Cell getCeldaI(Image image, HorizontalAlignment horizontalAlignment, boolean border) {
         image.setMargins(0, 0, 0, 0);
         Cell cellI = new Cell().add(image);
