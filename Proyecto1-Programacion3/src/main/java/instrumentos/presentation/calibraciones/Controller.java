@@ -47,7 +47,6 @@ public class Controller {
     }
     instrumentos.presentation.instrumentos.Controller controller;
 
-    //------------------------------------------------------------------------------------------------------------------
     public Controller(Model model, View view) {
         this.view = view;
         this.model = model;
