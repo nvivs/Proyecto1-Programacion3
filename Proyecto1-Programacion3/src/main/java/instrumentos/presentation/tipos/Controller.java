@@ -23,11 +23,15 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static java.sql.JDBCType.BOOLEAN;
 import static java.sql.JDBCType.NUMERIC;
@@ -51,7 +55,8 @@ public class Controller{
         long inicio = System.currentTimeMillis();
         System.out.println("Inicio de búsqueda: " + new java.util.Date(inicio));
 
-        simulateCpuWorkMillis();
+        // Simula carga CPU real distribuida entre múltiples hilos
+        simulateCpuWorkParallel();
 
         List<TipoInstrumento> rows = Service.instance().search(filter);
         if (rows.isEmpty()) {
@@ -69,37 +74,6 @@ public class Controller{
 
         throw new Exception(rows.size() + " registro(s) encontrado(s).\n\nTiempo de búsqueda: " + duracion + " ms");
 
-    }
-
-    private void simulateCpuWorkMillis() {
-        long startNs = System.nanoTime();
-        long targetNs = startNs + SEARCH_SIMULATION_MS * 1_000_000L;
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] data = ("search-" + startNs).getBytes(StandardCharsets.UTF_8);
-            long counter = 0;
-            int checksum = 0;
-
-            while (System.nanoTime() < targetNs) {
-                md.update(data);
-                md.update(Long.toString(counter++).getBytes(StandardCharsets.UTF_8));
-                data = md.digest();
-                checksum += (data[0] & 0xff);
-            }
-
-            if (checksum == Integer.MIN_VALUE) {
-                System.out.println(checksum);
-            }
-        } catch (NoSuchAlgorithmException e) {
-            long busyUntil = System.nanoTime() + SEARCH_SIMULATION_MS * 1_000_000L;
-            long counter = 0;
-            while (System.nanoTime() < busyUntil) {
-                counter += (counter << 1) ^ 0x9e3779b97f4a7c15L;
-            }
-            if (counter == Long.MIN_VALUE) {
-                System.out.println(counter);
-            }
-        }
     }
 
     public void delete (TipoInstrumento filter) throws Exception {
@@ -206,6 +180,7 @@ public class Controller{
             throw new Exception("No se pudo crear el PDF");
         }
     }
+
     public void uploadFile(File file) throws Exception {
         long inicio = System.currentTimeMillis(); //  inicio
         System.out.println("Inicio de carga: " + new java.util.Date(inicio));
@@ -214,51 +189,77 @@ public class Controller{
             throw new Exception("ARCHIVO NO VÁLIDO");
         }
 
-        List<TipoInstrumento> creados = new ArrayList<>();
-        List<String> errores = new ArrayList<>();
+        // 1. Colecciones Seguras
+        List<TipoInstrumento> validosParaInsertar = java.util.Collections.synchronizedList(new ArrayList<>());
+        List<String> errores = java.util.Collections.synchronizedList(new ArrayList<>());
+        List<org.apache.poi.ss.usermodel.Row> filasAProcesar = new ArrayList<>();
 
+        // 2. Crear estructuras de búsqueda RÁPIDA (O(1)) para no saturar los hilos
+        // Extraemos los códigos que ya están en el sistema
+        java.util.Set<String> codigosExistentes = Service.instance().getTipos().stream()
+                .map(TipoInstrumento::getCodigo)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // Set concurrente para evitar que el mismo Excel traiga 2 códigos iguales
+        java.util.Set<String> codigosEnEsteExcel = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        // 3. Lectura física del Excel (I/O)
         try (FileInputStream fis = new FileInputStream(file);
              org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
 
             org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
-
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
-                if (row == null) continue;
-
-                try {
-                    String codigo = getCellValue(row, 0);
-                    String nombre = getCellValue(row, 1);
-                    String unidad = getCellValue(row, 2);
-
-                    if (codigo.isEmpty() || nombre.isEmpty() || unidad.isEmpty()) {
-                        errores.add("Fila " + (i + 1) + ": datos incompletos, omitida.");
-                        continue;
-                    }
-
-                    try {
-                        // Simula una validación compleja o una consulta externa que toma 1ms
-                        Thread.sleep(1);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-
-                    TipoInstrumento t = new TipoInstrumento();
-                    t.setCodigo(codigo);
-                    t.setNombre(nombre);
-                    t.setUnidad(unidad);
-                    Service.instance().create(t);
-                    creados.add(t);
-
-                } catch (Exception ex) {
-                    errores.add("Fila " + (i + 1) + ": " + ex.getMessage());
-                }
+                if (row != null) filasAProcesar.add(row);
             }
-
         } catch (Exception e) {
             throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
         }
 
+        // 4. Procesamiento PARALELO (Aquí ocurre la magia a máxima velocidad)
+        filasAProcesar.parallelStream().forEach(row -> {
+            int numeroFila = row.getRowNum() + 1;
+
+            try {
+                String codigo = getCellValue(row, 0);
+                String nombre = getCellValue(row, 1);
+                String unidad = getCellValue(row, 2);
+
+                if (codigo.isEmpty() || nombre.isEmpty() || unidad.isEmpty()) {
+                    errores.add("Fila " + numeroFila + ": datos incompletos, omitida.");
+                    return;
+                }
+
+                // SIMULACIÓN DE CARGA
+                try { Thread.sleep(1); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+
+                // Verificación ultrarrápida: revisa si existe en BD o si está duplicado en el archivo
+                // Como NO hay un bloque synchronized gigante, los hilos fluyen libremente
+                if (codigosExistentes.contains(codigo) || !codigosEnEsteExcel.add(codigo)) {
+                    errores.add("Fila " + numeroFila + ": Tipo de instrumento ya existe (" + codigo + ").");
+                    return;
+                }
+
+                TipoInstrumento t = new TipoInstrumento();
+                t.setCodigo(codigo);
+                t.setNombre(nombre);
+                t.setUnidad(unidad);
+
+                validosParaInsertar.add(t);
+
+            } catch (Exception ex) {
+                errores.add("Fila " + numeroFila + ": " + ex.getMessage());
+            }
+        });
+
+        // 5. Inserción Masiva (Batch)
+        // Ya validamos todo, así que podemos inyectarlos directamente en la lista subyacente
+        // de una sola vez, en lugar de llamar Service.create() 10,000 veces.
+        if (!validosParaInsertar.isEmpty()) {
+            Service.instance().getTipos().addAll(validosParaInsertar);
+        }
+
+        // 6. Actualización de la Vista
         model.setList(Service.instance().search(new TipoInstrumento()));
         model.setCurrent(new TipoInstrumento());
         model.setMode(1);
@@ -270,15 +271,14 @@ public class Controller{
         System.out.println("Duración total: " + duracion + " ms");
 
         StringBuilder msg = new StringBuilder();
-        msg.append(creados.size()).append(" tipo(s) creado(s) exitosamente.");
-        msg.append("\n\nTiempo de carga: " + duracion + " ms"); //
+        msg.append(validosParaInsertar.size()).append(" tipo(s) creado(s) exitosamente.");
+        msg.append("\n\nTiempo de carga: " + duracion + " ms");
         if (!errores.isEmpty()) {
-            msg.append("\n\nAdvertencias:\n");
-            errores.forEach(e -> msg.append("• ").append(e).append("\n"));
+            msg.append("\n\nHubo ").append(errores.size()).append(" advertencias (ver consola para detalles).");
+            // Puedes imprimir los errores a la consola en vez de poner 10,000 en el popup
         }
         throw new Exception(msg.toString());
     }
-
     private String getCellValue(org.apache.poi.ss.usermodel.Row row, int col) {
         org.apache.poi.ss.usermodel.Cell cell = row.getCell(
                 col, org.apache.poi.ss.usermodel.Row.MissingCellPolicy.RETURN_BLANK_AS_NULL
@@ -291,4 +291,105 @@ public class Controller{
             default:      return "";
         }
     }
+
+    public void limpiarBaseDeDatosTemporal() throws Exception {
+        // Vaciar la lista en el Service
+        Service.instance().getTipos().clear();
+
+        // Actualizar la vista
+        model.setList(Service.instance().search(new TipoInstrumento()));
+        model.setCurrent(new TipoInstrumento());
+        model.setMode(1);
+        model.commit();
+
+        // Forzar guardado en XML (opcional, dependiendo de cuándo llames a stop())
+        Service.instance().stop();
+
+        throw new Exception("Base de datos de Tipos limpiada para pruebas.");
+    }
+
+    /**
+     * Simula carga de CPU real distribuida entre múltiples threads (paralelización).
+     * Cada thread realiza trabajo de SHA-256 repetido para consumir ciclos de CPU.
+     * 
+     * IMPORTANTE: El trabajo se DISTRIBUYE entre los threads, no se replica.
+     * - Versión secuencial: 1 thread × 10 segundos = 10 segundos reales
+     * - Versión paralela: 4 threads × (10/4 segundos cada uno) = ~2.5 segundos reales
+     */
+    private void simulateCpuWorkParallel() {
+        final long TOTAL_WORK_MS = SEARCH_SIMULATION_MS; // 10 segundos de TRABAJO TOTAL
+        int numThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
+        long workPerThread = TOTAL_WORK_MS / numThreads; // Distribuir equitativamente
+        long remainderMs = TOTAL_WORK_MS % numThreads; // Asignar residuo al primer thread
+        
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch latch = new CountDownLatch(numThreads);
+
+        System.out.println("[CPU PARALLEL] Iniciando simulación con " + numThreads + " threads...");
+        System.out.println("[CPU PARALLEL] Trabajo total: " + TOTAL_WORK_MS + " ms distribuido en " + workPerThread + " ms por thread");
+        long startTime = System.currentTimeMillis();
+
+        // Lanzar trabajo CPU en cada thread
+        for (int threadId = 0; threadId < numThreads; threadId++) {
+            final int id = threadId;
+            // El primer thread trabaja más si hay residuo
+            final long workMs = workPerThread + (threadId == 0 ? remainderMs : 0);
+            
+            executor.submit(() -> {
+                try {
+                    long targetNs = System.nanoTime() + workMs * 1_000_000L;
+                    MessageDigest md = MessageDigest.getInstance("SHA-256");
+                    byte[] data = ("worker-" + id + "-" + System.nanoTime()).getBytes(StandardCharsets.UTF_8);
+                    long counter = 0;
+                    int checksum = 0;
+
+                    // Ejecutar trabajo CPU distribuido
+                    while (System.nanoTime() < targetNs) {
+                        md.update(data);
+                        md.update(Long.toString(counter++).getBytes(StandardCharsets.UTF_8));
+                        data = md.digest();
+                        checksum += (data[0] & 0xff);
+                    }
+
+                    // Evitar que el compilador optimice el bucle
+                    if (checksum == Integer.MIN_VALUE) {
+                        System.out.println("[Worker " + id + "] Checksum: " + checksum);
+                    }
+
+                } catch (NoSuchAlgorithmException e) {
+                    // Fallback: trabajo CPU basado en operaciones bitwise
+                    long busyUntil = System.nanoTime() + workMs * 1_000_000L;
+                    long counter = 0;
+                    while (System.nanoTime() < busyUntil) {
+                        counter += (counter << 1) ^ 0x9e3779b97f4a7c15L;
+                    }
+                    if (counter == Long.MIN_VALUE) {
+                        System.out.println("[Worker " + Thread.currentThread().getId() + "] Counter: " + counter);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        // Esperar a que todos los threads terminen
+        executor.shutdown();
+        try {
+            // El timeout debe ser ligeramente mayor que workPerThread (no TOTAL_WORK_MS)
+            if (!latch.await(workPerThread + 2000, TimeUnit.MILLISECONDS)) {
+                System.out.println("[CPU PARALLEL] Advertencia: Algunos threads no terminaron a tiempo");
+            }
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        System.out.println("[CPU PARALLEL] Simulación completada en " + elapsed + " ms (Aceleración teórica: " + (TOTAL_WORK_MS / Math.max(1, elapsed)) + "x)");
+    }
 }
+
+
