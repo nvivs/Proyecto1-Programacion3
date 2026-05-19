@@ -22,11 +22,20 @@ import instrumentos.logic.Calibraciones;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class Controller {
     View view;
@@ -38,7 +47,7 @@ public class Controller {
     }
     instrumentos.presentation.instrumentos.Controller controller;
 
-    //------------------------------------------------------------------------------------------------------------------
+
     public Controller(Model model, View view) {
         this.view = view;
         this.model = model;
@@ -70,128 +79,6 @@ public class Controller {
         throw new Exception(rows.size() + " registro(s) encontrado(s).\n\nTiempo de búsqueda: " + duracion + " ms");
     }
 
-    //------------------------------------------------------------------------------------------------------------------
-    public void uploadFile(File file) throws Exception {
-        long inicio = System.currentTimeMillis();
-        System.out.println("Inicio de carga: " + new java.util.Date(inicio));
-
-        if (file == null || !file.exists()) {
-            throw new Exception("ARCHIVO NO VÁLIDO");
-        }
-
-        List<Calibraciones> creados = new ArrayList<>();
-        List<String> errores = new ArrayList<>();
-
-        try (FileInputStream fis = new FileInputStream(file);
-             org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
-
-            org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
-
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
-                if (row == null) continue;
-
-                try {
-                    String numero      = getCellValue(row, 0);
-                    String mediciones  = getCellValue(row, 1);
-                    String fecha       = getCellValue(row, 2);
-                    String instrumento = getCellValue(row, 3);
-
-                    if (numero.isEmpty() || mediciones.isEmpty() ||
-                            fecha.isEmpty()  || instrumento.isEmpty()) {
-                        errores.add("Fila " + (i + 1) + ": datos incompletos, omitida.");
-                        continue;
-                    }
-
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-
-                    // Buscar instrumento por serie
-                    Instrumento inst;
-                    try {
-                        Instrumento filtro = new Instrumento();
-                        filtro.setSerie(instrumento);
-                        inst = Service.instance().read(filtro);
-                    } catch (Exception ex) {
-                        errores.add("Fila " + (i + 1) + ": instrumento '" + instrumento + "' no encontrado.");
-                        continue;
-                    }
-
-                    Calibraciones nueva = new Calibraciones();
-                    nueva.setNumero(numero);
-                    nueva.setMediciones(Integer.parseInt(mediciones));
-                    nueva.setFecha(fecha);
-                    nueva.setInstrumento(inst);
-
-                    try {
-                        Service.instance().create(nueva);
-                        creados.add(nueva);
-                    } catch (Exception ex) {
-                        errores.add("Fila " + (i + 1) + ": [NUM=" + numero + " | INST=" + instrumento + "] -> " + ex.getMessage());
-                    }
-
-                } catch (NumberFormatException nfe) {
-                    errores.add("Fila " + (i + 1) + ": 'mediciones' debe ser un número entero válido.");
-                } catch (Exception ex) {
-                    errores.add("Fila " + (i + 1) + ": " + ex.getMessage());
-                }
-            }
-
-        } catch (Exception e) {
-            throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
-        }
-
-        // Refrescar lista del instrumento actual
-        if (!creados.isEmpty() && controller.getCurrent() != null && controller.getCurrent().getTipo() != null) {
-            Instrumento actual = controller.getCurrent();
-            List<Calibraciones> lista = actual.getListCalibracion();
-            calibracionesInstrumento.put(actual, lista);
-            controller.setListaC(lista);
-            model.setProps();
-            model.commit();
-        }
-
-        long fin = System.currentTimeMillis();
-        long duracion = fin - inicio;
-        System.out.println("Fin de carga: " + new java.util.Date(fin));
-        System.out.println("Duración: " + duracion + " ms");
-        System.out.println("Creados: " + creados.size() + " | Errores: " + errores.size());
-        errores.forEach(System.out::println);
-
-        String resumen = "Carga completada.\nCreados: " + creados.size() + " | Errores: " + errores.size()
-                + "\nTiempo: " + duracion + " ms";
-        if (!errores.isEmpty()) {
-            resumen += "\n\nDetalle de errores:\n" + String.join("\n", errores);
-        }
-        throw new Exception(resumen);
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
-    private String getCellValue(org.apache.poi.ss.usermodel.Row row, int col) {
-        org.apache.poi.ss.usermodel.Cell cell = row.getCell(col);
-        if (cell == null) return "";
-        switch (cell.getCellType()) {
-            case STRING:  return cell.getStringCellValue().trim();
-            case NUMERIC:
-                // Evita notación científica en números como serie o número
-                if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
-                    // Si es fecha formateada en Excel, la convierte a String yyyy-MM-dd
-                    java.time.LocalDate ld = cell.getLocalDateTimeCellValue().toLocalDate();
-                    return ld.toString();
-                }
-                double d = cell.getNumericCellValue();
-                if (d == Math.floor(d)) return String.valueOf((long) d);
-                return String.valueOf(d);
-            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA: return cell.getCellFormula();
-            default:      return "";
-        }
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
     public void delete(Calibraciones filter) throws Exception {
         try {
             filter = model.getCurrent();
@@ -260,7 +147,6 @@ public class Controller {
         if (controller.getCurrent().getTipo() != null) { model.crearNumeros(); }
     }
 
-    //------------------------------------------------------------------------------------------------------------------
     public void setSelectedInstrumento() throws Exception {
         if (controller.getCurrent().getTipo() == null) {
             throw new Exception("No seleccionó ningún instrumento. No podrá agregar calibraciones");
@@ -315,8 +201,7 @@ public class Controller {
         }
         model.commit();
     }
-
-    //------------------------------------------------------------------------------------------------------------------
+    
     private Cell getCeldaI(Image image, HorizontalAlignment horizontalAlignment, boolean border) {
         image.setMargins(0, 0, 0, 0);
         Cell cellI = new Cell().add(image);
@@ -373,5 +258,223 @@ public class Controller {
         } catch (Exception e) {
             throw new Exception("No se pudo crear el PDF");
         }
+    }
+
+    public void uploadFile(File file) throws Exception {
+        long inicio = System.currentTimeMillis();
+        System.out.println("Inicio de carga: " + new java.util.Date(inicio));
+
+        if (file == null || !file.exists()) {
+            throw new Exception("ARCHIVO NO VÁLIDO");
+        }
+
+        // 1. Colecciones Seguras
+        List<Calibraciones> validosParaInsertar = java.util.Collections.synchronizedList(new ArrayList<>());
+        List<String> errores = java.util.Collections.synchronizedList(new ArrayList<>());
+        List<org.apache.poi.ss.usermodel.Row> filasAProcesar = new ArrayList<>();
+
+        // 2. Crear estructuras de búsqueda RÁPIDA (O(1)) para no saturar los hilos
+        // Extraemos las claves "serie|numero" que ya están en el sistema
+        Set<String> clavesExistentes = Service.instance().getInstrumentos().stream()
+                .flatMap(inst -> inst.getListCalibracion().stream()
+                        .map(c -> inst.getSerie() + "|" + c.getNumero()))
+                .collect(Collectors.toSet());
+
+        // Set concurrente para evitar que el mismo Excel traiga 2 números iguales para el mismo instrumento
+        Set<String> clavesEnEsteExcel = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        // 3. Lectura física del Excel (I/O)
+        try (FileInputStream fis = new FileInputStream(file);
+             org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
+
+            org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(0);
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
+                if (row != null) filasAProcesar.add(row);
+            }
+        } catch (Exception e) {
+            throw new Exception("ERROR AL LEER EL ARCHIVO: " + e.getMessage());
+        }
+
+        // 4. Procesamiento PARALELO (Aquí ocurre la magia a máxima velocidad)
+        filasAProcesar.parallelStream().forEach(row -> {
+            int numeroFila = row.getRowNum() + 1;
+
+            try {
+                String numero      = getCellValue(row, 0);
+                String mediciones  = getCellValue(row, 1);
+                String fecha       = getCellValue(row, 2);
+                String instrumento = getCellValue(row, 3);
+
+                if (numero.isEmpty() || mediciones.isEmpty() ||
+                        fecha.isEmpty()  || instrumento.isEmpty()) {
+                    errores.add("Fila " + numeroFila + ": datos incompletos, omitida.");
+                    return;
+                }
+
+                // SIMULACIÓN DE CARGA
+                try { Thread.sleep(1); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+
+                // Buscar instrumento por serie
+                Instrumento inst;
+                try {
+                    Instrumento filtro = new Instrumento();
+                    filtro.setSerie(instrumento);
+                    inst = Service.instance().read(filtro);
+                } catch (Exception ex) {
+                    errores.add("Fila " + numeroFila + ": instrumento '" + instrumento + "' no encontrado.");
+                    return;
+                }
+
+                // Verificación ultrarrápida: revisa si existe en BD o si está duplicado en el archivo
+                // Como NO hay un bloque synchronized gigante, los hilos fluyen libremente
+                String clave = instrumento + "|" + numero;
+                if (clavesExistentes.contains(clave) || !clavesEnEsteExcel.add(clave)) {
+                    errores.add("Fila " + numeroFila + ": calibración '" + numero + "' ya existe para el instrumento '" + instrumento + "'.");
+                    return;
+                }
+
+                Calibraciones nueva = new Calibraciones();
+                nueva.setNumero(numero);
+                nueva.setMediciones(Integer.parseInt(mediciones));
+                nueva.setFecha(fecha);
+                nueva.setInstrumento(inst);
+
+                validosParaInsertar.add(nueva);
+
+            } catch (Exception ex) {
+                errores.add("Fila " + numeroFila + ": " + ex.getMessage());
+            }
+        });
+
+        // 5. Inserción Masiva (Batch)
+        // Ya validamos todo, así que podemos inyectarlos directamente en la lista subyacente
+        // de una sola vez, en lugar de llamar Service.create() 600 veces.
+        if (!validosParaInsertar.isEmpty()) {
+            for (Calibraciones c : validosParaInsertar) {
+                c.getInstrumento().getListCalibracion().add(c);
+            }
+        }
+
+        // 6. Actualización de la Vista
+        if (!validosParaInsertar.isEmpty() && controller.getCurrent() != null
+                && controller.getCurrent().getTipo() != null) {
+            Instrumento actual = controller.getCurrent();
+            List<Calibraciones> lista = actual.getListCalibracion();
+            calibracionesInstrumento.put(actual, lista);
+            controller.setListaC(lista);
+            model.setProps();
+            model.commit();
+        }
+
+        long fin = System.currentTimeMillis();
+        long duracion = fin - inicio;
+        System.out.println("Fin de carga: " + new java.util.Date(fin));
+        System.out.println("Duración total: " + duracion + " ms");
+
+        StringBuilder msg = new StringBuilder();
+        msg.append(validosParaInsertar.size()).append(" calibración(es) creada(s) exitosamente.");
+        msg.append("\n\nTiempo de carga: ").append(duracion).append(" ms");
+        if (!errores.isEmpty()) {
+            msg.append("\n\nHubo ").append(errores.size()).append(" advertencias (ver consola para detalles).");
+        }
+        throw new Exception(msg.toString());
+    }
+
+    private String getCellValue(org.apache.poi.ss.usermodel.Row row, int col) {
+        org.apache.poi.ss.usermodel.Cell cell = row.getCell(
+                col, org.apache.poi.ss.usermodel.Row.MissingCellPolicy.RETURN_BLANK_AS_NULL
+        );
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:  return cell.getStringCellValue().trim();
+            case NUMERIC: return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            default:      return "";
+        }
+    }
+
+    /**
+     * Simula carga de CPU real distribuida entre múltiples threads (paralelización).
+     * Cada thread realiza trabajo de SHA-256 repetido para consumir ciclos de CPU.
+     *
+     * IMPORTANTE: El trabajo se DISTRIBUYE entre los threads, no se replica.
+     * - Versión secuencial: 1 thread × 10 segundos = 10 segundos reales
+     * - Versión paralela: 4 threads × (10/4 segundos cada uno) = ~2.5 segundos reales
+     */
+    private void simulateCpuWorkParallel() {
+        final long TOTAL_WORK_MS = 10000L; // 10 segundos de TRABAJO TOTAL
+        int numThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
+        long workPerThread = TOTAL_WORK_MS / numThreads; // Distribuir equitativamente
+        long remainderMs = TOTAL_WORK_MS % numThreads;   // Asignar residuo al primer thread
+
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch latch = new CountDownLatch(numThreads);
+
+        System.out.println("[CPU PARALLEL] Iniciando simulación con " + numThreads + " threads...");
+        System.out.println("[CPU PARALLEL] Trabajo total: " + TOTAL_WORK_MS + " ms distribuido en " + workPerThread + " ms por thread");
+        long startTime = System.currentTimeMillis();
+
+        // Lanzar trabajo CPU en cada thread
+        for (int threadId = 0; threadId < numThreads; threadId++) {
+            final int id = threadId;
+            // El primer thread trabaja más si hay residuo
+            final long workMs = workPerThread + (threadId == 0 ? remainderMs : 0);
+
+            executor.submit(() -> {
+                try {
+                    long targetNs = System.nanoTime() + workMs * 1_000_000L;
+                    MessageDigest md = MessageDigest.getInstance("SHA-256");
+                    byte[] data = ("worker-" + id + "-" + System.nanoTime()).getBytes(StandardCharsets.UTF_8);
+                    long counter = 0;
+                    int checksum = 0;
+
+                    // Ejecutar trabajo CPU distribuido
+                    while (System.nanoTime() < targetNs) {
+                        md.update(data);
+                        md.update(Long.toString(counter++).getBytes(StandardCharsets.UTF_8));
+                        data = md.digest();
+                        checksum += (data[0] & 0xff);
+                    }
+
+                    // Evitar que el compilador optimice el bucle
+                    if (checksum == Integer.MIN_VALUE) {
+                        System.out.println("[Worker " + id + "] Checksum: " + checksum);
+                    }
+
+                } catch (NoSuchAlgorithmException e) {
+                    // Fallback: trabajo CPU basado en operaciones bitwise
+                    long busyUntil = System.nanoTime() + workMs * 1_000_000L;
+                    long counter = 0;
+                    while (System.nanoTime() < busyUntil) {
+                        counter += (counter << 1) ^ 0x9e3779b97f4a7c15L;
+                    }
+                    if (counter == Long.MIN_VALUE) {
+                        System.out.println("[Worker " + Thread.currentThread().getId() + "] Counter: " + counter);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        // Esperar a que todos los threads terminen
+        executor.shutdown();
+        try {
+            // El timeout debe ser ligeramente mayor que workPerThread (no TOTAL_WORK_MS)
+            if (!latch.await(workPerThread + 2000, TimeUnit.MILLISECONDS)) {
+                System.out.println("[CPU PARALLEL] Advertencia: Algunos threads no terminaron a tiempo");
+            }
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        System.out.println("[CPU PARALLEL] Simulación completada en " + elapsed + " ms (Aceleración teórica: "
+                + (TOTAL_WORK_MS / Math.max(1, elapsed)) + "x)");
     }
 }
